@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Laundry Slot Booking H-8</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #f0f4ff, #e1ecff);
+      margin: 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 30px auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+    h2, h3 { text-align: center; }
+    label { font-weight: 600; margin-top: 15px; display: block; }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-family: 'Poppins', sans-serif;
+    }
+    button {
+      background: #007BFF;
+      color: white;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    button:hover { background: #0056b3; }
+
+    .hidden { display: none; }
+
+    .booking-entry {
+      background: #f1f3f5;
+      padding: 12px;
+      border-left: 5px solid #007BFF;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      white-space: pre-line;
+    }
+
+    .current-slot {
+      background: #e6ffe6;
+      border-left-color: green;
+      position: relative;
+    }
+    .current-slot::after {
+      content: "🟢 LIVE";
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: green;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      text-align: center;
+    }
+    th {
+      background: #007BFF;
+      color: white;
+    }
+    .live { color: green; font-weight: bold; }
+    .delete {
+      background: #dc3545;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .admin-btn {
+      background: #6c757d;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container" id="userView">
+  <h2>🧺 Laundry Slot Booking H-8</h2>
+
+  <form id="bookingForm">
+    <label>Name</label>
+    <input id="userName" required>
+
+    <label>Date</label>
+    <input type="date" id="bookingDate" required>
+
+    <label>Big Washer</label>
+    <select id="bigWasher"></select>
+
+    <label>Small Washer</label>
+    <select id="smallWasher"></select>
+
+    <label>Big Dryer</label>
+    <select id="bigDryer"></select>
+
+    <label>Small Dryer</label>
+    <select id="smallDryer"></select>
+
+    <button type="submit">✅ Book Slot</button>
+  </form>
+
+  <button class="admin-btn" id="adminLoginBtn">🔐 Admin Login</button>
+</div>
+
+<!-- ADMIN VIEW -->
+<div class="container hidden" id="adminView">
+  <h2>🛠️ Admin Dashboard</h2>
+
+  <label>Select Date</label>
+  <input type="date" id="adminDate">
+
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Machine</th>
+        <th>Slot</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="adminTable"></tbody>
+  </table>
+
+  <button class="admin-btn" onclick="logoutAdmin()">⬅ Back to User</button>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+import { getDatabase, ref, push, get, child, remove } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBfU-aqLYHF_X0Rwv0WqZtB_M0cdacoDg",
+  authDomain: "launry-booking-h8.firebaseapp.com",
+  databaseURL: "https://launry-booking-h8-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "launry-booking-h8",
+  storageBucket: "launry-booking-h8.appspot.com",
+  messagingSenderId: "485927717258",
+  appId: "1:485927717258:web:be15abc9f8cd281846e073"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const today = new Date().toLocaleDateString("en-CA");
+document.getElementById("bookingDate").value = today;
+document.getElementById("bookingDate").min = today;
+document.getElementById("adminDate").value = today;
+
+const timeSlots = [];
+for (let i = 0; i < 24; i++) {
+  const s = String(i).padStart(2, "0") + ":00";
+  const e = String((i+1)%24).padStart(2, "0") + ":00";
+  timeSlots.push(`${s} - ${e}`);
+}
+
+const fields = ["bigWasher","smallWasher","bigDryer","smallDryer"];
+
+function populateSlots(booked = {}) {
+  fields.forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = `<option value="">-- Select Slot --</option>`;
+    timeSlots.forEach(slot => {
+      if (!booked[id]?.includes(slot)) {
+        const o = document.createElement("option");
+        o.value = slot;
+        o.textContent = slot;
+        sel.appendChild(o);
+      }
+    });
+  });
+}
+populateSlots();
+
+document.getElementById("bookingForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const data = {
+    name: userName.value.trim(),
+    date: bookingDate.value,
+    bigWasher: bigWasher.value,
+    smallWasher: smallWasher.value,
+    bigDryer: bigDryer.value,
+    smallDryer: smallDryer.value
+  };
+
+  const snap = await get(child(ref(db), `bookings/${data.date}`));
+  if (snap.exists()) {
+    for (const b of Object.values(snap.val())) {
+      for (const f of fields) {
+        if (data[f] && b[f] === data[f]) {
+          alert("⚠️ Slot already booked");
+          return;
+        }
+      }
+    }
+  }
+
+  await push(ref(db, `bookings/${data.date}`), data);
+  alert("✅ Booking Successful");
+  e.target.reset();
+  bookingDate.value = today;
+});
+
+document.getElementById("adminLoginBtn").onclick = () => {
+  const pwd = prompt("Enter admin password");
+  if (pwd === "admin123") {
+    userView.classList.add("hidden");
+    adminView.classList.remove("hidden");
+    loadAdmin();
+  } else alert("❌ Wrong password");
+};
+
+window.logoutAdmin = () => {
+  adminView.classList.add("hidden");
+  userView.classList.remove("hidden");
+};
+
+function currentMinutes() {
+  const d = new Date();
+  return d.getHours()*60 + d.getMinutes();
+}
+
+async function loadAdmin() {
+  adminTable.innerHTML = "";
+  const snap = await get(child(ref(db), `bookings/${adminDate.value}`));
+  if (!snap.exists()) return;
+
+  Object.entries(snap.val()).forEach(([key,b]) => {
+    fields.forEach(f => {
+      if (!b[f]) return;
+      const start = b[f].split(" - ")[0];
+      const [h,m] = start.split(":").map(Number);
+      const sm = h*60+m;
+      const live = sm <= currentMinutes() && currentMinutes() < sm+60;
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${b.name}</td>
+        <td>${f}</td>
+        <td>${b[f]}</td>
+        <td class="${live?'live':''}">${live?'LIVE':'UPCOMING'}</td>
+        <td><button class="delete" onclick="deleteBooking('${key}')">Delete</button></td>
+      `;
+      adminTable.appendChild(tr);
+    });
+  });
+}
+
+window.deleteBooking = async key => {
+  if (!confirm("Delete booking?")) return;
+  await remove(ref(db, `bookings/${adminDate.value}/${key}`));
+  loadAdmin();
+};
+
+adminDate.addEventListener("change", loadAdmin);
+</script>
+
+</body>
+</html>
