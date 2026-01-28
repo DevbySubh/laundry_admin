@@ -22,7 +22,7 @@
       border-radius: 15px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.1);
     }
-    h2, h3 { text-align: center; }
+    h2 { text-align: center; }
     label { font-weight: 600; margin-top: 15px; display: block; }
     input, select, button {
       width: 100%;
@@ -41,32 +41,7 @@
       margin-top: 20px;
     }
     button:hover { background: #0056b3; }
-
     .hidden { display: none; }
-
-    .booking-entry {
-      background: #f1f3f5;
-      padding: 12px;
-      border-left: 5px solid #007BFF;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      white-space: pre-line;
-    }
-
-    .current-slot {
-      background: #e6ffe6;
-      border-left-color: green;
-      position: relative;
-    }
-    .current-slot::after {
-      content: "🟢 LIVE";
-      position: absolute;
-      top: 8px;
-      right: 10px;
-      font-size: 0.8rem;
-      font-weight: bold;
-      color: green;
-    }
 
     table {
       width: 100%;
@@ -82,14 +57,19 @@
       background: #007BFF;
       color: white;
     }
+
     .live { color: green; font-weight: bold; }
+    .upcoming { color: #0d6efd; font-weight: bold; }
+    .completed { color: #6c757d; font-weight: bold; }
+
     .delete {
       background: #dc3545;
-      padding: 6px 10px;
+      color: white;
+      border: none;
+      padding: 6px 12px;
       border-radius: 6px;
       cursor: pointer;
     }
-
     .admin-btn {
       background: #6c757d;
       margin-top: 30px;
@@ -99,6 +79,7 @@
 
 <body>
 
+<!-- USER VIEW -->
 <div class="container" id="userView">
   <h2>🧺 Laundry Slot Booking H-8</h2>
 
@@ -152,7 +133,10 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-import { getDatabase, ref, push, get, child, remove } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+import {
+  getDatabase, ref, push, get, child,
+  update, remove
+} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBfU-aqLYHF_X0Rwv0WqZtB_M0cdacoDg",
@@ -168,51 +152,49 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 const today = new Date().toLocaleDateString("en-CA");
-document.getElementById("bookingDate").value = today;
-document.getElementById("bookingDate").min = today;
-document.getElementById("adminDate").value = today;
-
-const timeSlots = [];
-for (let i = 0; i < 24; i++) {
-  const s = String(i).padStart(2, "0") + ":00";
-  const e = String((i+1)%24).padStart(2, "0") + ":00";
-  timeSlots.push(`${s} - ${e}`);
-}
+bookingDate.value = today;
+bookingDate.min = today;
+adminDate.value = today;
 
 const fields = ["bigWasher","smallWasher","bigDryer","smallDryer"];
 
-function populateSlots(booked = {}) {
-  fields.forEach(id => {
-    const sel = document.getElementById(id);
-    sel.innerHTML = `<option value="">-- Select Slot --</option>`;
-    timeSlots.forEach(slot => {
-      if (!booked[id]?.includes(slot)) {
-        const o = document.createElement("option");
-        o.value = slot;
-        o.textContent = slot;
-        sel.appendChild(o);
+const timeSlots = Array.from({length:24},(_,i)=>{
+  const s = String(i).padStart(2,"0")+":00";
+  const e = String((i+1)%24).padStart(2,"0")+":00";
+  return `${s} - ${e}`;
+});
+
+function populateSlots(booked={}) {
+  fields.forEach(f=>{
+    const s=document.getElementById(f);
+    s.innerHTML='<option value="">-- Select Slot --</option>';
+    timeSlots.forEach(slot=>{
+      if(!booked[f]?.includes(slot)){
+        const o=document.createElement("option");
+        o.value=o.textContent=slot;
+        s.appendChild(o);
       }
     });
   });
 }
 populateSlots();
 
-document.getElementById("bookingForm").addEventListener("submit", async e => {
+bookingForm.addEventListener("submit",async e=>{
   e.preventDefault();
-  const data = {
-    name: userName.value.trim(),
-    date: bookingDate.value,
-    bigWasher: bigWasher.value,
-    smallWasher: smallWasher.value,
-    bigDryer: bigDryer.value,
-    smallDryer: smallDryer.value
+  const data={
+    name:userName.value.trim(),
+    date:bookingDate.value,
+    bigWasher:bigWasher.value,
+    smallWasher:smallWasher.value,
+    bigDryer:bigDryer.value,
+    smallDryer:smallDryer.value
   };
 
-  const snap = await get(child(ref(db), `bookings/${data.date}`));
-  if (snap.exists()) {
-    for (const b of Object.values(snap.val())) {
-      for (const f of fields) {
-        if (data[f] && b[f] === data[f]) {
+  const snap=await get(child(ref(db),`bookings/${data.date}`));
+  if(snap.exists()){
+    for(const b of Object.values(snap.val())){
+      for(const f of fields){
+        if(data[f] && b[f]===data[f]){
           alert("⚠️ Slot already booked");
           return;
         }
@@ -220,64 +202,100 @@ document.getElementById("bookingForm").addEventListener("submit", async e => {
     }
   }
 
-  await push(ref(db, `bookings/${data.date}`), data);
+  await push(ref(db,`bookings/${data.date}`),data);
   alert("✅ Booking Successful");
-  e.target.reset();
-  bookingDate.value = today;
+  bookingForm.reset();
+  bookingDate.value=today;
 });
 
-document.getElementById("adminLoginBtn").onclick = () => {
-  const pwd = prompt("Enter admin password");
-  if (pwd === "admin123") {
+adminLoginBtn.onclick=()=>{
+  if(prompt("Enter admin password")==="admin123"){
     userView.classList.add("hidden");
     adminView.classList.remove("hidden");
     loadAdmin();
   } else alert("❌ Wrong password");
 };
 
-window.logoutAdmin = () => {
+window.logoutAdmin=()=>{
   adminView.classList.add("hidden");
   userView.classList.remove("hidden");
 };
 
-function currentMinutes() {
-  const d = new Date();
+function nowMinutes(){
+  const d=new Date();
   return d.getHours()*60 + d.getMinutes();
 }
 
-async function loadAdmin() {
-  adminTable.innerHTML = "";
-  const snap = await get(child(ref(db), `bookings/${adminDate.value}`));
-  if (!snap.exists()) return;
+async function loadAdmin(){
+  adminTable.innerHTML="";
+  const selectedDate = adminDate.value;
+  const todayStr = today;
+  const snap=await get(child(ref(db),`bookings/${selectedDate}`));
+  if(!snap.exists()) return;
 
-  Object.entries(snap.val()).forEach(([key,b]) => {
-    fields.forEach(f => {
-      if (!b[f]) return;
-      const start = b[f].split(" - ")[0];
-      const [h,m] = start.split(":").map(Number);
-      const sm = h*60+m;
-      const live = sm <= currentMinutes() && currentMinutes() < sm+60;
+  for(const [key,b] of Object.entries(snap.val())){
+    fields.forEach(f=>{
+      if(!b[f]) return;
 
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
+      const [h,m]=b[f].split(" - ")[0].split(":").map(Number);
+      const slotStart = h*60 + m;
+
+      let status, statusClass;
+
+      if (selectedDate < todayStr) {
+        status = "COMPLETED";
+        statusClass = "completed";
+      } else if (selectedDate > todayStr) {
+        status = "UPCOMING";
+        statusClass = "upcoming";
+      } else {
+        const now = nowMinutes();
+        if (slotStart <= now && now < slotStart + 60) {
+          status = "LIVE";
+          statusClass = "live";
+        } else if (slotStart + 60 <= now) {
+          status = "COMPLETED";
+          statusClass = "completed";
+        } else {
+          status = "UPCOMING";
+          statusClass = "upcoming";
+        }
+      }
+
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
         <td>${b.name}</td>
         <td>${f}</td>
         <td>${b[f]}</td>
-        <td class="${live?'live':''}">${live?'LIVE':'UPCOMING'}</td>
-        <td><button class="delete" onclick="deleteBooking('${key}')">Delete</button></td>
-      `;
+        <td class="${statusClass}">${status}</td>
+        <td>
+          <button class="delete"
+            onclick="deleteMachine('${key}','${f}')">
+            Delete
+          </button>
+        </td>`;
       adminTable.appendChild(tr);
     });
-  });
+  }
 }
 
-window.deleteBooking = async key => {
-  if (!confirm("Delete booking?")) return;
-  await remove(ref(db, `bookings/${adminDate.value}/${key}`));
+window.deleteMachine=async(key,f)=>{
+  if(!confirm(`Delete ${f} booking?`)) return;
+
+  const base=ref(db,`bookings/${adminDate.value}/${key}`);
+  await update(base,{[f]:""});
+
+  const snap=await get(base);
+  if(snap.exists()){
+    const v=snap.val();
+    if(fields.every(x=>!v[x])){
+      await remove(base);
+    }
+  }
   loadAdmin();
 };
 
-adminDate.addEventListener("change", loadAdmin);
+adminDate.addEventListener("change",loadAdmin);
 </script>
 
 </body>
