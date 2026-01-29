@@ -1,124 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Laundry Slot Booking H-8</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<title>Laundry Slot Booking H-8</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, #f0f4ff, #e1ecff);
-      margin: 0;
-    }
+<style>
+*{box-sizing:border-box}
+body{
+  font-family:Poppins,sans-serif;
+  background:linear-gradient(135deg,#f0f4ff,#e1ecff);
+  margin:0
+}
+.page{
+  display:flex;
+  gap:20px;
+  max-width:1300px;
+  margin:auto;
+  padding:20px
+}
+.container,.side{
+  background:#fff;
+  padding:30px;
+  border-radius:15px;
+  box-shadow:0 8px 20px rgba(0,0,0,.1)
+}
+.container{flex:1}
+.side{width:320px;position:sticky;top:20px;height:fit-content}
+.hidden{display:none}
 
-    .page {
-      display: flex;
-      gap: 20px;
-      max-width: 1300px;
-      margin: auto;
-      padding: 20px;
-    }
+label{font-weight:600;margin-top:15px;display:block}
+input,select,button{
+  width:100%;padding:10px;margin-top:6px;
+  border-radius:8px;border:1px solid #ccc
+}
+button{
+  background:#007BFF;color:#fff;font-weight:600;
+  border:none;cursor:pointer;margin-top:20px
+}
+.admin-btn{background:#6c757d}
 
-    .container, .side-metrics {
-      background: #fff;
-      padding: 30px;
-      border-radius: 15px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-    }
+.metric{background:#f8f9fa;padding:12px;border-radius:10px;margin-bottom:12px}
+ol{padding-left:20px;margin:0;font-size:.9rem}
 
-    .container { flex: 1; }
+.modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.4);
+  display:flex;align-items:center;justify-content:center;z-index:1000
+}
+.modal-box{
+  background:#fff;padding:25px;border-radius:12px;width:320px;text-align:center
+}
 
-    .side-metrics {
-      width: 320px;
-      position: sticky;
-      top: 20px;
-      height: fit-content;
-    }
-
-    h2, h3 { margin-top: 0; }
-
-    label { font-weight: 600; margin-top: 15px; display: block; }
-
-    input, select, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 6px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-family: 'Poppins', sans-serif;
-    }
-
-    button {
-      background: #007BFF;
-      color: white;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      margin-top: 20px;
-    }
-
-    .admin-btn {
-      background: #6c757d;
-    }
-
-    .metric {
-      background: #f8f9fa;
-      padding: 12px;
-      border-radius: 10px;
-      margin-bottom: 12px;
-      font-size: 0.95rem;
-    }
-
-    ol { padding-left: 20px; margin: 0; font-size: 0.9rem; }
-
-    /* MODAL */
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-    .modal.hidden { display: none; }
-
-    .modal-box {
-      background: #fff;
-      padding: 25px;
-      border-radius: 12px;
-      width: 320px;
-      text-align: center;
-    }
-
-    /* TOAST */
-    .toast {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #212529;
-      color: white;
-      padding: 12px 18px;
-      border-radius: 10px;
-      font-size: 0.95rem;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-      z-index: 999;
-    }
-
-    .toast.hidden { opacity: 0; pointer-events: none; }
-  </style>
+.toast{
+  position:fixed;bottom:20px;left:50%;
+  transform:translateX(-50%);
+  background:#212529;color:#fff;padding:12px 18px;
+  border-radius:10px;font-size:.95rem;
+  box-shadow:0 8px 20px rgba(0,0,0,.3);
+  z-index:999;transition:.3s
+}
+.toast.hidden{opacity:0;pointer-events:none}
+</style>
 </head>
 
 <body>
 
-<div class="page">
+<!-- USER PAGE -->
+<div class="page" id="userPage">
 
-  <!-- USER VIEW -->
-  <div class="container" id="userView">
+  <div class="container">
     <h2>🧺 Laundry Slot Booking H-8</h2>
 
     <form id="bookingForm">
@@ -128,27 +79,18 @@
       <label>Date</label>
       <input type="date" id="bookingDate" required>
 
-      <label>Big Washer</label>
-      <select id="bigWasher"></select>
-
-      <label>Small Washer</label>
-      <select id="smallWasher"></select>
-
-      <label>Big Dryer</label>
-      <select id="bigDryer"></select>
-
-      <label>Small Dryer</label>
-      <select id="smallDryer"></select>
+      <label>Big Washer</label><select id="bigWasher"></select>
+      <label>Small Washer</label><select id="smallWasher"></select>
+      <label>Big Dryer</label><select id="bigDryer"></select>
+      <label>Small Dryer</label><select id="smallDryer"></select>
 
       <button type="submit">✅ Book Slot</button>
     </form>
 
-    <!-- ✅ ADMIN BUTTON IS HERE -->
     <button class="admin-btn" id="adminLoginBtn">🔐 Admin Login</button>
   </div>
 
-  <!-- SIDE METRICS -->
-  <div class="side-metrics">
+  <div class="side">
     <h3>🏆 Laundry Legends</h3>
 
     <div class="metric" id="topMonth">🏅 Top Booker (This Month): —</div>
@@ -163,7 +105,14 @@
 
 </div>
 
-<!-- ADMIN LOGIN MODAL -->
+<!-- ADMIN PAGE -->
+<div class="container hidden" id="adminPage">
+  <h2>🛠️ Admin Dashboard</h2>
+  <p>Admin successfully logged in.</p>
+  <button class="admin-btn" onclick="logoutAdmin()">⬅ Back to User</button>
+</div>
+
+<!-- LOGIN MODAL -->
 <div class="modal hidden" id="passwordModal">
   <div class="modal-box">
     <h3>Admin Login</h3>
@@ -172,64 +121,47 @@
   </div>
 </div>
 
-<div id="insightToast" class="toast hidden"></div>
+<div id="toast" class="toast hidden"></div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-import { getDatabase, ref, push, get } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+import{initializeApp}from"https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+import{getDatabase,ref,push,get}from"https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
 
-/* Firebase */
-const firebaseConfig = {
-  apiKey: "AIzaSyBfU-aqLYHF_X0Rwv0WqZtB_M0cdacoDg",
-  authDomain: "launry-booking-h8.firebaseapp.com",
-  databaseURL: "https://launry-booking-h8-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "launry-booking-h8",
-  storageBucket: "launry-booking-h8.appspot.com",
-  messagingSenderId: "485927717258",
-  appId: "1:485927717258:web:be15abc9f8cd281846e073"
+const firebaseConfig={
+  apiKey:"AIzaSyBfU-aqLYHF_X0Rwv0WqZtB_M0cdacoDg",
+  authDomain:"launry-booking-h8.firebaseapp.com",
+  databaseURL:"https://launry-booking-h8-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"launry-booking-h8",
+  storageBucket:"launry-booking-h8.appspot.com",
+  messagingSenderId:"485927717258",
+  appId:"1:485927717258:web:be15abc9f8cd281846e073"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const app=initializeApp(firebaseConfig);
+const db=getDatabase(app);
 
-/* DOM */
-const adminLoginBtn = document.getElementById("adminLoginBtn");
-const passwordModal = document.getElementById("passwordModal");
-const adminPassword = document.getElementById("adminPassword");
-const confirmAdminLogin = document.getElementById("confirmAdminLogin");
+const fields=["bigWasher","smallWasher","bigDryer","smallDryer"];
+const today=new Date().toLocaleDateString("en-CA");
+const month=today.slice(0,7);
+bookingDate.value=today;
 
-const topMonthDiv = document.getElementById("topMonth");
-const topAllTimeDiv = document.getElementById("topAllTime");
-const top10Month = document.getElementById("top10Month");
-const top10All = document.getElementById("top10All");
-const toast = document.getElementById("insightToast");
-
-/* Init */
-const today = new Date().toLocaleDateString("en-CA");
-const month = today.slice(0,7);
-bookingDate.value = today;
-
-const fields = ["bigWasher","smallWasher","bigDryer","smallDryer"];
-
-/* Slots */
-const timeSlots = Array.from({length:24},(_,i)=>{
-  const s = String(i).padStart(2,"0")+":00";
-  const e = String((i+1)%24).padStart(2,"0")+":00";
+const timeSlots=[...Array(24)].map((_,i)=>{
+  const s=String(i).padStart(2,"0")+":00";
+  const e=String((i+1)%24).padStart(2,"0")+":00";
   return `${s} - ${e}`;
 });
-
 fields.forEach(f=>{
-  const sel=document.getElementById(f);
-  sel.innerHTML='<option value="">-- Select Slot --</option>';
-  timeSlots.forEach(slot=>{
+  const s=document.getElementById(f);
+  s.innerHTML='<option value="">-- Select Slot --</option>';
+  timeSlots.forEach(t=>{
     const o=document.createElement("option");
-    o.value=o.textContent=slot;
-    sel.appendChild(o);
+    o.value=o.textContent=t;
+    s.appendChild(o);
   });
 });
 
-/* Booking */
-bookingForm.addEventListener("submit", async e=>{
+/* BOOKING */
+bookingForm.onsubmit=async e=>{
   e.preventDefault();
   await push(ref(db,`bookings/${bookingDate.value}`),{
     name:userName.value.trim(),
@@ -241,55 +173,68 @@ bookingForm.addEventListener("submit", async e=>{
   });
   alert("✅ Booking Successful");
   bookingForm.reset();
-});
+};
 
-/* Metrics */
+/* ADMIN */
+adminLoginBtn.onclick=()=>passwordModal.classList.remove("hidden");
+confirmAdminLogin.onclick=()=>{
+  if(adminPassword.value==="admin123"){
+    passwordModal.classList.add("hidden");
+    userPage.classList.add("hidden");
+    adminPage.classList.remove("hidden");
+    adminPassword.value="";
+  }else alert("❌ Wrong password");
+};
+window.logoutAdmin=()=>{
+  adminPage.classList.add("hidden");
+  userPage.classList.remove("hidden");
+};
+
+/* METRICS */
 async function loadMetrics(){
-  const snap = await get(ref(db,"bookings"));
-  if(!snap.exists()) return;
+  const snap=await get(ref(db,"bookings"));
+  if(!snap.exists())return;
 
-  const monthly={}, allTime={}, night={}, early={};
+  const monthly={},allTime={},night={},early={};
 
   Object.values(snap.val()).forEach(day=>{
     Object.values(day).forEach(b=>{
       allTime[b.name]=(allTime[b.name]||0)+1;
-      if(b.date.startsWith(month)){
+      if(b.date.startsWith(month))
         monthly[b.name]=(monthly[b.name]||0)+1;
-      }
 
       fields.forEach(f=>{
-        if(!b[f] || !b.date.startsWith(month)) return;
+        if(!b[f]||!b.date.startsWith(month))return;
         const h=parseInt(b[f]);
-        if(h<5) night[b.name]=(night[b.name]||0)+1;
-        if(h>=5 && h<7) early[b.name]=(early[b.name]||0)+1;
+        if(h<5)night[b.name]=(night[b.name]||0)+1;
+        if(h>=5&&h<7)early[b.name]=(early[b.name]||0)+1;
       });
     });
   });
 
   const sort=o=>Object.entries(o).sort((a,b)=>b[1]-a[1]);
+  const m=sort(monthly),a=sort(allTime);
 
-  const m=sort(monthly);
-  const a=sort(allTime);
-
-  if(m[0]) topMonthDiv.innerText=`🏅 Top Booker (This Month): ${m[0][0]} (${m[0][1]} bookings)`;
-  if(a[0]) topAllTimeDiv.innerText=`🌟 All-Time Legend: ${a[0][0]} (${a[0][1]} bookings)`;
+  if(m[0])topMonth.textContent=`🏅 Top Booker (This Month): ${m[0][0]} (${m[0][1]})`;
+  if(a[0])topAllTime.textContent=`🌟 All-Time Legend: ${a[0][0]} (${a[0][1]})`;
 
   top10Month.innerHTML=m.slice(0,10).map(x=>`<li>${x[0]} – ${x[1]}</li>`).join("");
   top10All.innerHTML=a.slice(0,10).map(x=>`<li>${x[0]} – ${x[1]}</li>`).join("");
 
   const insights=[];
-  if(Object.keys(night).length) insights.push(`🦉 Night Owl: ${sort(night)[0][0]}`);
-  if(Object.keys(early).length) insights.push(`🐓 Early Bird: ${sort(early)[0][0]}`);
+  if(sort(night)[0])
+    insights.push(`🦉 Night Owl: ${sort(night)[0][0]} (${sort(night)[0][1]} bookings)`);
+  if(sort(early)[0])
+    insights.push(`🐓 Early Bird: ${sort(early)[0][0]} (${sort(early)[0][1]} bookings)`);
 
-  rotateInsights(insights);
+  rotate(insights);
 }
 
-/* Toast rotation */
 let i=0;
-function rotateInsights(arr){
-  if(!arr.length) return;
+function rotate(arr){
+  if(!arr.length)return;
   setInterval(()=>{
-    toast.innerText=arr[i%arr.length];
+    toast.textContent=arr[i%arr.length];
     toast.classList.remove("hidden");
     setTimeout(()=>toast.classList.add("hidden"),3500);
     i++;
@@ -297,22 +242,6 @@ function rotateInsights(arr){
 }
 
 loadMetrics();
-
-/* Admin modal */
-adminLoginBtn.onclick = () => {
-  passwordModal.classList.remove("hidden");
-  adminPassword.value = "";
-  adminPassword.focus();
-};
-
-confirmAdminLogin.onclick = () => {
-  if(adminPassword.value === "admin123"){
-    alert("✅ Admin authenticated (dashboard can be added here)");
-    passwordModal.classList.add("hidden");
-  } else {
-    alert("❌ Wrong password");
-  }
-};
 </script>
 
 </body>
