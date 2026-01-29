@@ -74,6 +74,28 @@
       background: #6c757d;
       margin-top: 30px;
     }
+
+    /* 🔐 Admin Modal */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-box {
+      background: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      width: 320px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .modal-box h3 {
+      text-align: center;
+      margin-bottom: 15px;
+    }
   </style>
 </head>
 
@@ -129,6 +151,19 @@
   </table>
 
   <button class="admin-btn" onclick="logoutAdmin()">⬅ Back to User</button>
+</div>
+
+<!-- 🔐 PASSWORD MODAL -->
+<div class="modal hidden" id="passwordModal">
+  <div class="modal-box">
+    <h3>Admin Login</h3>
+    <input
+      type="password"
+      id="adminPassword"
+      placeholder="Enter admin password"
+    />
+    <button id="confirmAdminLogin">Login</button>
+  </div>
 </div>
 
 <script type="module">
@@ -202,21 +237,30 @@ bookingForm.addEventListener("submit",async e=>{
     }
   }
 
-  await push(ref(db,`bookings/${data.date}`),data);
-  alert("✅ Booking Successful");
-  bookingForm.reset();
-  bookingDate.value=today;
+  await push(ref(db),`bookings/${data.date}`,data);
 });
 
-adminLoginBtn.onclick=()=>{
-  if(prompt("Enter admin password")==="admin123"){
+const modal = document.getElementById("passwordModal");
+const adminPwdInput = document.getElementById("adminPassword");
+
+adminLoginBtn.onclick = () => {
+  modal.classList.remove("hidden");
+  adminPwdInput.value = "";
+  adminPwdInput.focus();
+};
+
+confirmAdminLogin.onclick = () => {
+  if (adminPwdInput.value === "admin123") {
+    modal.classList.add("hidden");
     userView.classList.add("hidden");
     adminView.classList.remove("hidden");
     loadAdmin();
-  } else alert("❌ Wrong password");
+  } else {
+    alert("❌ Wrong password");
+  }
 };
 
-window.logoutAdmin=()=>{
+window.logoutAdmin = () => {
   adminView.classList.add("hidden");
   userView.classList.remove("hidden");
 };
@@ -240,25 +284,19 @@ async function loadAdmin(){
       const [h,m]=b[f].split(" - ")[0].split(":").map(Number);
       const slotStart = h*60 + m;
 
-      let status, statusClass;
-
+      let status, cls;
       if (selectedDate < todayStr) {
-        status = "COMPLETED";
-        statusClass = "completed";
+        status="COMPLETED"; cls="completed";
       } else if (selectedDate > todayStr) {
-        status = "UPCOMING";
-        statusClass = "upcoming";
+        status="UPCOMING"; cls="upcoming";
       } else {
-        const now = nowMinutes();
-        if (slotStart <= now && now < slotStart + 60) {
-          status = "LIVE";
-          statusClass = "live";
-        } else if (slotStart + 60 <= now) {
-          status = "COMPLETED";
-          statusClass = "completed";
+        const now=nowMinutes();
+        if (slotStart<=now && now<slotStart+60) {
+          status="LIVE"; cls="live";
+        } else if (slotStart+60<=now) {
+          status="COMPLETED"; cls="completed";
         } else {
-          status = "UPCOMING";
-          statusClass = "upcoming";
+          status="UPCOMING"; cls="upcoming";
         }
       }
 
@@ -267,7 +305,7 @@ async function loadAdmin(){
         <td>${b.name}</td>
         <td>${f}</td>
         <td>${b[f]}</td>
-        <td class="${statusClass}">${status}</td>
+        <td class="${cls}">${status}</td>
         <td>
           <button class="delete"
             onclick="deleteMachine('${key}','${f}')">
@@ -279,7 +317,7 @@ async function loadAdmin(){
   }
 }
 
-window.deleteMachine=async(key,f)=>{
+window.deleteMachine = async (key,f)=>{
   if(!confirm(`Delete ${f} booking?`)) return;
 
   const base=ref(db,`bookings/${adminDate.value}/${key}`);
