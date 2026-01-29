@@ -60,7 +60,9 @@
       margin-top: 20px;
     }
 
-    .admin-btn { background: #6c757d; }
+    .admin-btn {
+      background: #6c757d;
+    }
 
     .metric {
       background: #f8f9fa;
@@ -72,6 +74,27 @@
 
     ol { padding-left: 20px; margin: 0; font-size: 0.9rem; }
 
+    /* MODAL */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal.hidden { display: none; }
+
+    .modal-box {
+      background: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      width: 320px;
+      text-align: center;
+    }
+
+    /* TOAST */
     .toast {
       position: fixed;
       bottom: 20px;
@@ -95,7 +118,7 @@
 <div class="page">
 
   <!-- USER VIEW -->
-  <div class="container">
+  <div class="container" id="userView">
     <h2>🧺 Laundry Slot Booking H-8</h2>
 
     <form id="bookingForm">
@@ -119,6 +142,9 @@
 
       <button type="submit">✅ Book Slot</button>
     </form>
+
+    <!-- ✅ ADMIN BUTTON IS HERE -->
+    <button class="admin-btn" id="adminLoginBtn">🔐 Admin Login</button>
   </div>
 
   <!-- SIDE METRICS -->
@@ -135,6 +161,15 @@
     <ol id="top10All"></ol>
   </div>
 
+</div>
+
+<!-- ADMIN LOGIN MODAL -->
+<div class="modal hidden" id="passwordModal">
+  <div class="modal-box">
+    <h3>Admin Login</h3>
+    <input type="password" id="adminPassword" placeholder="Enter admin password">
+    <button id="confirmAdminLogin">Login</button>
+  </div>
 </div>
 
 <div id="insightToast" class="toast hidden"></div>
@@ -158,6 +193,11 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 /* DOM */
+const adminLoginBtn = document.getElementById("adminLoginBtn");
+const passwordModal = document.getElementById("passwordModal");
+const adminPassword = document.getElementById("adminPassword");
+const confirmAdminLogin = document.getElementById("confirmAdminLogin");
+
 const topMonthDiv = document.getElementById("topMonth");
 const topAllTimeDiv = document.getElementById("topAllTime");
 const top10Month = document.getElementById("top10Month");
@@ -203,7 +243,7 @@ bookingForm.addEventListener("submit", async e=>{
   bookingForm.reset();
 });
 
-/* Metrics (BOOKING = 1 COUNT) */
+/* Metrics */
 async function loadMetrics(){
   const snap = await get(ref(db,"bookings"));
   if(!snap.exists()) return;
@@ -212,20 +252,16 @@ async function loadMetrics(){
 
   Object.values(snap.val()).forEach(day=>{
     Object.values(day).forEach(b=>{
-      // booking-based counts
       allTime[b.name]=(allTime[b.name]||0)+1;
       if(b.date.startsWith(month)){
         monthly[b.name]=(monthly[b.name]||0)+1;
       }
 
-      // time-based (slot-specific)
       fields.forEach(f=>{
-        if(!b[f]) return;
+        if(!b[f] || !b.date.startsWith(month)) return;
         const h=parseInt(b[f]);
-        if(b.date.startsWith(month)){
-          if(h<5) night[b.name]=(night[b.name]||0)+1;
-          if(h>=5 && h<7) early[b.name]=(early[b.name]||0)+1;
-        }
+        if(h<5) night[b.name]=(night[b.name]||0)+1;
+        if(h>=5 && h<7) early[b.name]=(early[b.name]||0)+1;
       });
     });
   });
@@ -261,6 +297,22 @@ function rotateInsights(arr){
 }
 
 loadMetrics();
+
+/* Admin modal */
+adminLoginBtn.onclick = () => {
+  passwordModal.classList.remove("hidden");
+  adminPassword.value = "";
+  adminPassword.focus();
+};
+
+confirmAdminLogin.onclick = () => {
+  if(adminPassword.value === "admin123"){
+    alert("✅ Admin authenticated (dashboard can be added here)");
+    passwordModal.classList.add("hidden");
+  } else {
+    alert("❌ Wrong password");
+  }
+};
 </script>
 
 </body>
