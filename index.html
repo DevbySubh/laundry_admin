@@ -22,20 +22,17 @@
       padding: 20px;
     }
 
-    .container {
-      flex: 1;
+    .container, .side-metrics {
       background: #fff;
       padding: 30px;
       border-radius: 15px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.1);
     }
 
+    .container { flex: 1; }
+
     .side-metrics {
       width: 320px;
-      background: #fff;
-      padding: 20px;
-      border-radius: 15px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
       position: sticky;
       top: 20px;
       height: fit-content;
@@ -75,28 +72,6 @@
 
     ol { padding-left: 20px; margin: 0; font-size: 0.9rem; }
 
-    /* MODAL */
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-
-    .modal.hidden { display: none; }
-
-    .modal-box {
-      background: #fff;
-      padding: 25px;
-      border-radius: 12px;
-      width: 320px;
-      text-align: center;
-    }
-
-    /* TOAST */
     .toast {
       position: fixed;
       bottom: 20px;
@@ -109,7 +84,6 @@
       font-size: 0.95rem;
       box-shadow: 0 8px 20px rgba(0,0,0,0.3);
       z-index: 999;
-      transition: opacity 0.4s ease;
     }
 
     .toast.hidden { opacity: 0; pointer-events: none; }
@@ -121,7 +95,7 @@
 <div class="page">
 
   <!-- USER VIEW -->
-  <div class="container" id="userView">
+  <div class="container">
     <h2>🧺 Laundry Slot Booking H-8</h2>
 
     <form id="bookingForm">
@@ -145,8 +119,6 @@
 
       <button type="submit">✅ Book Slot</button>
     </form>
-
-    <button class="admin-btn" id="adminLoginBtn">🔐 Admin Login</button>
   </div>
 
   <!-- SIDE METRICS -->
@@ -163,15 +135,6 @@
     <ol id="top10All"></ol>
   </div>
 
-</div>
-
-<!-- ADMIN LOGIN MODAL -->
-<div class="modal hidden" id="passwordModal">
-  <div class="modal-box">
-    <h3>Admin Login</h3>
-    <input type="password" id="adminPassword" placeholder="Enter admin password">
-    <button id="confirmAdminLogin">Login</button>
-  </div>
 </div>
 
 <div id="insightToast" class="toast hidden"></div>
@@ -201,6 +164,7 @@ const top10Month = document.getElementById("top10Month");
 const top10All = document.getElementById("top10All");
 const toast = document.getElementById("insightToast");
 
+/* Init */
 const today = new Date().toLocaleDateString("en-CA");
 const month = today.slice(0,7);
 bookingDate.value = today;
@@ -239,7 +203,7 @@ bookingForm.addEventListener("submit", async e=>{
   bookingForm.reset();
 });
 
-/* Metrics */
+/* Metrics (BOOKING = 1 COUNT) */
 async function loadMetrics(){
   const snap = await get(ref(db,"bookings"));
   if(!snap.exists()) return;
@@ -248,12 +212,17 @@ async function loadMetrics(){
 
   Object.values(snap.val()).forEach(day=>{
     Object.values(day).forEach(b=>{
+      // booking-based counts
+      allTime[b.name]=(allTime[b.name]||0)+1;
+      if(b.date.startsWith(month)){
+        monthly[b.name]=(monthly[b.name]||0)+1;
+      }
+
+      // time-based (slot-specific)
       fields.forEach(f=>{
         if(!b[f]) return;
-        allTime[b.name]=(allTime[b.name]||0)+1;
+        const h=parseInt(b[f]);
         if(b.date.startsWith(month)){
-          monthly[b.name]=(monthly[b.name]||0)+1;
-          const h=parseInt(b[f]);
           if(h<5) night[b.name]=(night[b.name]||0)+1;
           if(h>=5 && h<7) early[b.name]=(early[b.name]||0)+1;
         }
@@ -266,8 +235,8 @@ async function loadMetrics(){
   const m=sort(monthly);
   const a=sort(allTime);
 
-  if(m[0]) topMonthDiv.innerText=`🏅 Top Booker (This Month): ${m[0][0]} (${m[0][1]})`;
-  if(a[0]) topAllTimeDiv.innerText=`🌟 All-Time Legend: ${a[0][0]} (${a[0][1]})`;
+  if(m[0]) topMonthDiv.innerText=`🏅 Top Booker (This Month): ${m[0][0]} (${m[0][1]} bookings)`;
+  if(a[0]) topAllTimeDiv.innerText=`🌟 All-Time Legend: ${a[0][0]} (${a[0][1]} bookings)`;
 
   top10Month.innerHTML=m.slice(0,10).map(x=>`<li>${x[0]} – ${x[1]}</li>`).join("");
   top10All.innerHTML=a.slice(0,10).map(x=>`<li>${x[0]} – ${x[1]}</li>`).join("");
@@ -279,7 +248,7 @@ async function loadMetrics(){
   rotateInsights(insights);
 }
 
-/* Toast */
+/* Toast rotation */
 let i=0;
 function rotateInsights(arr){
   if(!arr.length) return;
@@ -292,13 +261,6 @@ function rotateInsights(arr){
 }
 
 loadMetrics();
-
-/* Admin modal */
-adminLoginBtn.onclick=()=>passwordModal.classList.remove("hidden");
-confirmAdminLogin.onclick=()=>{
-  if(adminPassword.value==="admin123") alert("Admin access OK (dashboard omitted here)");
-  else alert("Wrong password");
-};
 </script>
 
 </body>
