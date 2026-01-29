@@ -24,11 +24,7 @@
     }
     h2 { text-align: center; }
 
-    label {
-      font-weight: 600;
-      margin-top: 15px;
-      display: block;
-    }
+    label { font-weight: 600; margin-top: 15px; display: block; }
 
     input, select, button {
       width: 100%;
@@ -47,7 +43,6 @@
       cursor: pointer;
       margin-top: 20px;
     }
-
     button:hover { background: #0056b3; }
 
     .hidden { display: none !important; }
@@ -64,10 +59,7 @@
       text-align: center;
     }
 
-    th {
-      background: #007BFF;
-      color: white;
-    }
+    th { background: #007BFF; color: white; }
 
     .live { color: green; font-weight: bold; }
     .upcoming { color: #0d6efd; font-weight: bold; }
@@ -82,10 +74,7 @@
       cursor: pointer;
     }
 
-    .admin-btn {
-      background: #6c757d;
-      margin-top: 30px;
-    }
+    .admin-btn { background: #6c757d; margin-top: 30px; }
 
     /* 🔐 MODAL */
     .modal {
@@ -107,8 +96,28 @@
       text-align: center;
     }
 
-    .modal-box h3 {
-      margin-bottom: 15px;
+    /* 🔔 INSIGHT TOAST */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #212529;
+      color: white;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      z-index: 999;
+      max-width: 90%;
+      text-align: center;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .toast.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-50%) translateY(10px);
     }
   </style>
 </head>
@@ -147,44 +156,34 @@
 <!-- ADMIN VIEW -->
 <div class="container hidden" id="adminView">
   <h2>🛠️ Admin Dashboard</h2>
-
   <label>Select Date</label>
   <input type="date" id="adminDate">
-
   <table>
     <thead>
       <tr>
-        <th>Name</th>
-        <th>Machine</th>
-        <th>Slot</th>
-        <th>Status</th>
-        <th>Action</th>
+        <th>Name</th><th>Machine</th><th>Slot</th><th>Status</th><th>Action</th>
       </tr>
     </thead>
     <tbody id="adminTable"></tbody>
   </table>
-
   <button class="admin-btn" onclick="logoutAdmin()">⬅ Back to User</button>
 </div>
 
-<!-- 🔐 ADMIN LOGIN MODAL (HIDDEN BY DEFAULT) -->
+<!-- ADMIN LOGIN MODAL -->
 <div class="modal hidden" id="passwordModal">
   <div class="modal-box">
     <h3>Admin Login</h3>
-    <input
-      type="password"
-      id="adminPassword"
-      placeholder="Enter admin password"
-    />
+    <input type="password" id="adminPassword" placeholder="Enter admin password"/>
     <button id="confirmAdminLogin">Login</button>
   </div>
 </div>
 
+<!-- 🔔 INSIGHT TOAST -->
+<div id="insightToast" class="toast hidden"></div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-import {
-  getDatabase, ref, push, get, child, update, remove
-} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+import { getDatabase, ref, push, get, child, update, remove } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBfU-aqLYHF_X0Rwv0WqZtB_M0cdacoDg",
@@ -199,14 +198,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-/* 🔒 FORCE MODAL HIDDEN ON LOAD (IMPORTANT FIX) */
 const modal = document.getElementById("passwordModal");
 modal.classList.add("hidden");
 
 const today = new Date().toLocaleDateString("en-CA");
-bookingDate.value = today;
-bookingDate.min = today;
-adminDate.value = today;
+const currentMonth = today.slice(0,7);
 
 const fields = ["bigWasher","smallWasher","bigDryer","smallDryer"];
 
@@ -216,138 +212,71 @@ const timeSlots = Array.from({length:24},(_,i)=>{
   return `${s} - ${e}`;
 });
 
-function populateSlots(booked={}) {
+function populateSlots() {
   fields.forEach(f=>{
-    const sel = document.getElementById(f);
-    sel.innerHTML = '<option value="">-- Select Slot --</option>';
+    const sel=document.getElementById(f);
+    sel.innerHTML='<option value="">-- Select Slot --</option>';
     timeSlots.forEach(slot=>{
-      if(!booked[f]?.includes(slot)){
-        const o=document.createElement("option");
-        o.value=o.textContent=slot;
-        sel.appendChild(o);
-      }
+      const o=document.createElement("option");
+      o.value=o.textContent=slot;
+      sel.appendChild(o);
     });
   });
 }
 populateSlots();
 
-bookingForm.addEventListener("submit", async e=>{
-  e.preventDefault();
-  const data={
-    name:userName.value.trim(),
-    date:bookingDate.value,
-    bigWasher:bigWasher.value,
-    smallWasher:smallWasher.value,
-    bigDryer:bigDryer.value,
-    smallDryer:smallDryer.value
-  };
+/* 🔔 MONTHLY INSIGHTS (OPTION A) */
+async function loadMonthlyInsights() {
+  const snap = await get(ref(db,"bookings"));
+  if (!snap.exists()) return;
 
-  const snap=await get(child(ref(db),`bookings/${data.date}`));
-  if(snap.exists()){
-    for(const b of Object.values(snap.val())){
-      for(const f of fields){
-        if(data[f] && b[f]===data[f]){
-          alert("⚠️ Slot already booked");
-          return;
+  const night={}, early={}, total={};
+  let totalSlots=0;
+
+  Object.values(snap.val()).forEach(day=>{
+    Object.values(day).forEach(b=>{
+      if(!b.date.startsWith(currentMonth)) return;
+      fields.forEach(f=>{
+        if(!b[f]) return;
+        totalSlots++;
+        const hour=parseInt(b[f].split(":")[0]);
+        if(hour>=0 && hour<5){
+          night[b.name]=(night[b.name]||0)+1;
         }
-      }
-    }
-  }
-
-  await push(ref(db,`bookings/${data.date}`),data);
-  alert("✅ Booking Successful");
-  bookingForm.reset();
-  bookingDate.value=today;
-});
-
-adminLoginBtn.onclick = () => {
-  modal.classList.remove("hidden");
-  adminPassword.value = "";
-  adminPassword.focus();
-};
-
-confirmAdminLogin.onclick = () => {
-  if (adminPassword.value === "admin123") {
-    modal.classList.add("hidden");
-    userView.classList.add("hidden");
-    adminView.classList.remove("hidden");
-    loadAdmin();
-  } else {
-    alert("❌ Wrong password");
-  }
-};
-
-window.logoutAdmin = () => {
-  adminView.classList.add("hidden");
-  userView.classList.remove("hidden");
-};
-
-function nowMinutes(){
-  const d=new Date();
-  return d.getHours()*60 + d.getMinutes();
-}
-
-async function loadAdmin(){
-  adminTable.innerHTML="";
-  const selectedDate = adminDate.value;
-  const snap=await get(child(ref(db),`bookings/${selectedDate}`));
-  if(!snap.exists()) return;
-
-  for(const [key,b] of Object.entries(snap.val())){
-    fields.forEach(f=>{
-      if(!b[f]) return;
-
-      const [h,m]=b[f].split(" - ")[0].split(":").map(Number);
-      const start=h*60+m;
-      const now=nowMinutes();
-
-      let status, cls;
-      if(selectedDate < today){
-        status="COMPLETED"; cls="completed";
-      } else if(selectedDate > today){
-        status="UPCOMING"; cls="upcoming";
-      } else if(start <= now && now < start+60){
-        status="LIVE"; cls="live";
-      } else if(start+60 <= now){
-        status="COMPLETED"; cls="completed";
-      } else {
-        status="UPCOMING"; cls="upcoming";
-      }
-
-      const tr=document.createElement("tr");
-      tr.innerHTML=`
-        <td>${b.name}</td>
-        <td>${f}</td>
-        <td>${b[f]}</td>
-        <td class="${cls}">${status}</td>
-        <td>
-          <button class="delete"
-            onclick="deleteMachine('${key}','${f}')">
-            Delete
-          </button>
-        </td>`;
-      adminTable.appendChild(tr);
+        if(hour>=5 && hour<7){
+          early[b.name]=(early[b.name]||0)+1;
+        }
+        total[f]=(total[f]||0)+1;
+      });
     });
+  });
+
+  const max=(obj)=>Object.entries(obj).sort((a,b)=>b[1]-a[1])[0];
+
+  const insights=[];
+  if(totalSlots===0){
+    insights.push("✨ Be the first one to do laundry this month!");
+  } else {
+    if(max(night)) insights.push(`🦉 Night Owl of the month: ${max(night)[0]} (${max(night)[1]} late-night washes)`);
+    if(max(early)) insights.push(`🐓 Early Bird of the month: ${max(early)[0]} (${max(early)[1]} sunrise washes)`);
+    if(max(total)) insights.push(`🏆 ${max(total)[0]} is the most used machine this month`);
+    insights.push(`🧺 Total laundry slots booked this month: ${totalSlots}`);
   }
+  rotateInsights(insights);
 }
 
-window.deleteMachine = async (key,f)=>{
-  if(!confirm(`Delete ${f} booking?`)) return;
+let insightIndex=0;
+function rotateInsights(insights){
+  const toast=document.getElementById("insightToast");
+  setInterval(()=>{
+    toast.innerText=insights[insightIndex%insights.length];
+    toast.classList.remove("hidden");
+    setTimeout(()=>toast.classList.add("hidden"),3500);
+    insightIndex++;
+  },5000);
+}
 
-  const base=ref(db,`bookings/${adminDate.value}/${key}`);
-  await update(base,{[f]:""});
-
-  const snap=await get(base);
-  if(snap.exists()){
-    const v=snap.val();
-    if(fields.every(x=>!v[x])){
-      await remove(base);
-    }
-  }
-  loadAdmin();
-};
-
-adminDate.addEventListener("change",loadAdmin);
+loadMonthlyInsights();
 </script>
 
 </body>
