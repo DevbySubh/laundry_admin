@@ -14,15 +14,47 @@
       background: linear-gradient(135deg, #f0f4ff, #e1ecff);
       margin: 0;
     }
+
+    .page {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+      max-width: 1200px;
+      margin: auto;
+    }
+
     .container {
-      max-width: 900px;
-      margin: 30px auto;
+      flex: 1;
       background: #fff;
       padding: 30px;
       border-radius: 15px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      margin: 30px 0;
     }
-    h2 { text-align: center; }
+
+    .side-metrics {
+      width: 280px;
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 15px;
+      margin-top: 30px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 20px;
+    }
+
+    .side-metrics h3 {
+      margin-top: 0;
+      text-align: center;
+    }
+
+    .metric {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      font-size: 0.95rem;
+    }
 
     label { font-weight: 600; margin-top: 15px; display: block; }
 
@@ -43,60 +75,12 @@
       cursor: pointer;
       margin-top: 20px;
     }
-    button:hover { background: #0056b3; }
+
+    .admin-btn { background: #6c757d; }
 
     .hidden { display: none !important; }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-
-    th, td {
-      padding: 10px;
-      border-bottom: 1px solid #ddd;
-      text-align: center;
-    }
-
-    th { background: #007BFF; color: white; }
-
-    .live { color: green; font-weight: bold; }
-    .upcoming { color: #0d6efd; font-weight: bold; }
-    .completed { color: #6c757d; font-weight: bold; }
-
-    .delete {
-      background: #dc3545;
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .admin-btn { background: #6c757d; margin-top: 30px; }
-
-    /* MODAL */
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-
-    .modal-box {
-      background: #fff;
-      padding: 25px;
-      border-radius: 12px;
-      width: 320px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-      text-align: center;
-    }
-
-    /* INSIGHT TOAST */
+    /* TOAST */
     .toast {
       position: fixed;
       bottom: 20px;
@@ -109,83 +93,69 @@
       font-size: 0.95rem;
       box-shadow: 0 8px 20px rgba(0,0,0,0.3);
       z-index: 999;
-      max-width: 90%;
-      text-align: center;
-      transition: opacity 0.4s ease, transform 0.4s ease;
+      transition: opacity 0.4s ease;
     }
 
-    .toast.hidden {
-      opacity: 0;
-      pointer-events: none;
-      transform: translateX(-50%) translateY(10px);
-    }
+    .toast.hidden { opacity: 0; pointer-events: none; }
+
   </style>
 </head>
 
 <body>
 
-<!-- USER VIEW -->
-<div class="container" id="userView">
-  <h2>🧺 Laundry Slot Booking H-8</h2>
+<div class="page">
 
-  <form id="bookingForm">
-    <label>Name</label>
-    <input id="userName" required>
+  <!-- MAIN USER VIEW -->
+  <div class="container" id="userView">
+    <h2>🧺 Laundry Slot Booking H-8</h2>
 
-    <label>Date</label>
-    <input type="date" id="bookingDate" required>
+    <form id="bookingForm">
+      <label>Name</label>
+      <input id="userName" required>
 
-    <label>Big Washer</label>
-    <select id="bigWasher"></select>
+      <label>Date</label>
+      <input type="date" id="bookingDate" required>
 
-    <label>Small Washer</label>
-    <select id="smallWasher"></select>
+      <label>Big Washer</label>
+      <select id="bigWasher"></select>
 
-    <label>Big Dryer</label>
-    <select id="bigDryer"></select>
+      <label>Small Washer</label>
+      <select id="smallWasher"></select>
 
-    <label>Small Dryer</label>
-    <select id="smallDryer"></select>
+      <label>Big Dryer</label>
+      <select id="bigDryer"></select>
 
-    <button type="submit">✅ Book Slot</button>
-  </form>
+      <label>Small Dryer</label>
+      <select id="smallDryer"></select>
 
-  <button class="admin-btn" id="adminLoginBtn">🔐 Admin Login</button>
-</div>
+      <button type="submit">✅ Book Slot</button>
+    </form>
 
-<!-- ADMIN VIEW -->
-<div class="container hidden" id="adminView">
-  <h2>🛠️ Admin Dashboard</h2>
-  <label>Select Date</label>
-  <input type="date" id="adminDate">
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th><th>Machine</th><th>Slot</th><th>Status</th><th>Action</th>
-      </tr>
-    </thead>
-    <tbody id="adminTable"></tbody>
-  </table>
-  <button class="admin-btn" onclick="logoutAdmin()">⬅ Back to User</button>
-</div>
-
-<!-- ADMIN LOGIN MODAL -->
-<div class="modal hidden" id="passwordModal">
-  <div class="modal-box">
-    <h3>Admin Login</h3>
-    <input type="password" id="adminPassword" placeholder="Enter admin password">
-    <button id="confirmAdminLogin">Login</button>
+    <button class="admin-btn" id="adminLoginBtn">🔐 Admin Login</button>
   </div>
+
+  <!-- SIDE METRICS -->
+  <div class="side-metrics">
+    <h3>🏆 Laundry Legends</h3>
+
+    <div class="metric" id="topMonth">
+      🏅 Top Booker (This Month): —
+    </div>
+
+    <div class="metric" id="topAllTime">
+      🌟 All-Time Legend: —
+    </div>
+  </div>
+
 </div>
 
-<!-- INSIGHT TOAST -->
+<!-- TOAST -->
 <div id="insightToast" class="toast hidden"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-import { getDatabase, ref, push, get, child, update, remove } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+import { getDatabase, ref, push, get, child } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
 
-/* ---------------- FIREBASE ---------------- */
 const firebaseConfig = {
   apiKey: "AIzaSyBfU-aqLYHF_X0Rwv0WqZtB_M0cdacoDg",
   authDomain: "launry-booking-h8.firebaseapp.com",
@@ -199,197 +169,95 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-/* ---------------- DOM REFERENCES ---------------- */
-const userView = document.getElementById("userView");
-const adminView = document.getElementById("adminView");
-const adminLoginBtn = document.getElementById("adminLoginBtn");
-const passwordModal = document.getElementById("passwordModal");
-const adminPassword = document.getElementById("adminPassword");
-const confirmAdminLogin = document.getElementById("confirmAdminLogin");
-const bookingForm = document.getElementById("bookingForm");
-const bookingDate = document.getElementById("bookingDate");
-const adminDate = document.getElementById("adminDate");
-const adminTable = document.getElementById("adminTable");
-const toast = document.getElementById("insightToast");
-
-/* ---------------- INIT ---------------- */
-passwordModal.classList.add("hidden");
-const today = new Date().toLocaleDateString("en-CA");
-bookingDate.value = today;
-bookingDate.min = today;
-adminDate.value = today;
-
 const fields = ["bigWasher","smallWasher","bigDryer","smallDryer"];
+const today = new Date().toLocaleDateString("en-CA");
+const month = today.slice(0,7);
 
-/* ---------------- TIME SLOTS ---------------- */
+/* ---------- TIME SLOTS ---------- */
 const timeSlots = Array.from({length:24},(_,i)=>{
   const s = String(i).padStart(2,"0")+":00";
   const e = String((i+1)%24).padStart(2,"0")+":00";
   return `${s} - ${e}`;
 });
 
-function populateSlots(){
-  fields.forEach(f=>{
-    const sel=document.getElementById(f);
-    sel.innerHTML='<option value="">-- Select Slot --</option>';
-    timeSlots.forEach(slot=>{
-      const o=document.createElement("option");
-      o.value=o.textContent=slot;
-      sel.appendChild(o);
-    });
+fields.forEach(f=>{
+  const sel=document.getElementById(f);
+  sel.innerHTML='<option value="">-- Select Slot --</option>';
+  timeSlots.forEach(slot=>{
+    const o=document.createElement("option");
+    o.value=o.textContent=slot;
+    sel.appendChild(o);
   });
-}
-populateSlots();
+});
 
-/* ---------------- BOOKING ---------------- */
+/* ---------- BOOKING ---------- */
+bookingDate.value = today;
 bookingForm.addEventListener("submit",async e=>{
   e.preventDefault();
-  const data={
-    name:userName.value.trim(),
+  await push(ref(db,`bookings/${bookingDate.value}`),{
+    name:userName.value,
     date:bookingDate.value,
     bigWasher:bigWasher.value,
     smallWasher:smallWasher.value,
     bigDryer:bigDryer.value,
     smallDryer:smallDryer.value
-  };
-
-  const snap=await get(child(ref(db),`bookings/${data.date}`));
-  if(snap.exists()){
-    for(const b of Object.values(snap.val())){
-      for(const f of fields){
-        if(data[f] && b[f]===data[f]){
-          alert("⚠️ Slot already booked");
-          return;
-        }
-      }
-    }
-  }
-
-  await push(ref(db,`bookings/${data.date}`),data);
+  });
   alert("✅ Booking Successful");
   bookingForm.reset();
-  bookingDate.value=today;
 });
 
-/* ---------------- ADMIN LOGIN ---------------- */
-adminLoginBtn.onclick=()=>{
-  passwordModal.classList.remove("hidden");
-  adminPassword.value="";
-  adminPassword.focus();
-};
-
-confirmAdminLogin.onclick=()=>{
-  if(adminPassword.value==="admin123"){
-    passwordModal.classList.add("hidden");
-    userView.classList.add("hidden");
-    adminView.classList.remove("hidden");
-    loadAdmin();
-  } else alert("❌ Wrong password");
-};
-
-window.logoutAdmin=()=>{
-  adminView.classList.add("hidden");
-  userView.classList.remove("hidden");
-};
-
-/* ---------------- ADMIN LOGIC ---------------- */
-function nowMinutes(){
-  const d=new Date();
-  return d.getHours()*60+d.getMinutes();
-}
-
-async function loadAdmin(){
-  adminTable.innerHTML="";
-  const snap=await get(child(ref(db),`bookings/${adminDate.value}`));
+/* ---------- METRICS + INSIGHTS ---------- */
+async function loadMetrics(){
+  const snap = await get(ref(db,"bookings"));
   if(!snap.exists()) return;
 
-  for(const [key,b] of Object.entries(snap.val())){
-    fields.forEach(f=>{
-      if(!b[f]) return;
-
-      const [h,m]=b[f].split(" - ")[0].split(":").map(Number);
-      const start=h*60+m;
-      const now=nowMinutes();
-
-      let status="UPCOMING",cls="upcoming";
-      if(adminDate.value<today){status="COMPLETED";cls="completed";}
-      else if(adminDate.value===today){
-        if(start<=now && now<start+60){status="LIVE";cls="live";}
-        else if(start+60<=now){status="COMPLETED";cls="completed";}
-      }
-
-      const tr=document.createElement("tr");
-      tr.innerHTML=`
-        <td>${b.name}</td>
-        <td>${f}</td>
-        <td>${b[f]}</td>
-        <td class="${cls}">${status}</td>
-        <td>
-          <button class="delete"
-            onclick="deleteMachine('${key}','${f}')">
-            Delete
-          </button>
-        </td>`;
-      adminTable.appendChild(tr);
-    });
-  }
-}
-
-window.deleteMachine=async(key,f)=>{
-  const base=ref(db,`bookings/${adminDate.value}/${key}`);
-  await update(base,{[f]:""});
-  const snap=await get(base);
-  if(snap.exists() && fields.every(x=>!snap.val()[x])) await remove(base);
-  loadAdmin();
-};
-
-adminDate.addEventListener("change",loadAdmin);
-
-/* ---------------- MONTHLY INSIGHTS ---------------- */
-async function loadMonthlyInsights(){
-  const snap=await get(ref(db,"bookings"));
-  if(!snap.exists()) return;
-
-  const month=today.slice(0,7);
-  const night={},early={};
-  let total=0;
+  const monthly={}, allTime={}, night={}, early={};
 
   Object.values(snap.val()).forEach(day=>{
     Object.values(day).forEach(b=>{
-      if(!b.date.startsWith(month)) return;
       fields.forEach(f=>{
         if(!b[f]) return;
-        total++;
-        const hour=parseInt(b[f]);
-        if(hour<5) night[b.name]=(night[b.name]||0)+1;
-        if(hour>=5 && hour<7) early[b.name]=(early[b.name]||0)+1;
+        allTime[b.name]=(allTime[b.name]||0)+1;
+        if(b.date.startsWith(month)){
+          monthly[b.name]=(monthly[b.name]||0)+1;
+          const h=parseInt(b[f]);
+          if(h<5) night[b.name]=(night[b.name]||0)+1;
+          if(h>=5 && h<7) early[b.name]=(early[b.name]||0)+1;
+        }
       });
     });
   });
 
   const max=o=>Object.entries(o).sort((a,b)=>b[1]-a[1])[0];
+
+  if(max(monthly))
+    document.getElementById("topMonth").innerText =
+      `🏅 Top Booker (This Month): ${max(monthly)[0]} (${max(monthly)[1]})`;
+
+  if(max(allTime))
+    document.getElementById("topAllTime").innerText =
+      `🌟 All-Time Legend: ${max(allTime)[0]} (${max(allTime)[1]})`;
+
   const insights=[];
-  if(total===0){
-    insights.push("✨ Be the first to do laundry this month!");
-  }else{
-    if(max(night)) insights.push(`🦉 Night Owl of the month: ${max(night)[0]} (${max(night)[1]} slots)`);
-    if(max(early)) insights.push(`🐓 Early Bird of the month: ${max(early)[0]} (${max(early)[1]} slots)`);
-    insights.push(`🧺 ${total} laundry slots booked this month`);
-  }
+  if(max(night)) insights.push(`🦉 Night Owl of the Month: ${max(night)[0]}`);
+  if(max(early)) insights.push(`🐓 Early Bird of the Month: ${max(early)[0]}`);
+
   rotateInsights(insights);
 }
 
-let i=0;
+/* ---------- ROTATING TOAST ---------- */
+let idx=0;
 function rotateInsights(arr){
+  if(!arr.length) return;
   setInterval(()=>{
-    toast.innerText=arr[i%arr.length];
-    toast.classList.remove("hidden");
-    setTimeout(()=>toast.classList.add("hidden"),3500);
-    i++;
+    insightToast.innerText=arr[idx%arr.length];
+    insightToast.classList.remove("hidden");
+    setTimeout(()=>insightToast.classList.add("hidden"),3500);
+    idx++;
   },5000);
 }
 
-loadMonthlyInsights();
+loadMetrics();
 </script>
 
 </body>
