@@ -19,7 +19,7 @@
       display: flex;
       gap: 20px;
       align-items: flex-start;
-      max-width: 1200px;
+      max-width: 1300px;
       margin: auto;
     }
 
@@ -33,8 +33,8 @@
     }
 
     .side-metrics {
-      width: 280px;
-      background: #ffffff;
+      width: 320px;
+      background: #fff;
       padding: 20px;
       border-radius: 15px;
       margin-top: 30px;
@@ -44,8 +44,8 @@
     }
 
     .side-metrics h3 {
-      margin-top: 0;
       text-align: center;
+      margin-top: 0;
     }
 
     .metric {
@@ -54,6 +54,25 @@
       border-radius: 10px;
       margin-bottom: 12px;
       font-size: 0.95rem;
+    }
+
+    .leaderboard {
+      margin-top: 10px;
+    }
+
+    .leaderboard h4 {
+      margin: 10px 0 5px;
+      font-size: 1rem;
+    }
+
+    .leaderboard ol {
+      padding-left: 20px;
+      margin: 0;
+      font-size: 0.9rem;
+    }
+
+    .leaderboard li {
+      margin-bottom: 4px;
     }
 
     label { font-weight: 600; margin-top: 15px; display: block; }
@@ -96,8 +115,10 @@
       transition: opacity 0.4s ease;
     }
 
-    .toast.hidden { opacity: 0; pointer-events: none; }
-
+    .toast.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
   </style>
 </head>
 
@@ -106,7 +127,7 @@
 <div class="page">
 
   <!-- MAIN USER VIEW -->
-  <div class="container" id="userView">
+  <div class="container">
     <h2>🧺 Laundry Slot Booking H-8</h2>
 
     <form id="bookingForm">
@@ -130,31 +151,33 @@
 
       <button type="submit">✅ Book Slot</button>
     </form>
-
-    <button class="admin-btn" id="adminLoginBtn">🔐 Admin Login</button>
   </div>
 
   <!-- SIDE METRICS -->
   <div class="side-metrics">
     <h3>🏆 Laundry Legends</h3>
 
-    <div class="metric" id="topMonth">
-      🏅 Top Booker (This Month): —
+    <div class="metric" id="topMonth">🏅 Top Booker (This Month): —</div>
+    <div class="metric" id="topAllTime">🌟 All-Time Legend: —</div>
+
+    <div class="leaderboard">
+      <h4>📅 Top 10 – This Month</h4>
+      <ol id="top10Month"></ol>
     </div>
 
-    <div class="metric" id="topAllTime">
-      🌟 All-Time Legend: —
+    <div class="leaderboard">
+      <h4>🌟 Top 10 – All Time</h4>
+      <ol id="top10All"></ol>
     </div>
   </div>
 
 </div>
 
-<!-- TOAST -->
 <div id="insightToast" class="toast hidden"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-import { getDatabase, ref, push, get, child } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+import { getDatabase, ref, push, get } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBfU-aqLYHF_X0Rwv0WqZtB_M0cdacoDg",
@@ -173,7 +196,7 @@ const fields = ["bigWasher","smallWasher","bigDryer","smallDryer"];
 const today = new Date().toLocaleDateString("en-CA");
 const month = today.slice(0,7);
 
-/* ---------- TIME SLOTS ---------- */
+/* Populate slots */
 const timeSlots = Array.from({length:24},(_,i)=>{
   const s = String(i).padStart(2,"0")+":00";
   const e = String((i+1)%24).padStart(2,"0")+":00";
@@ -190,12 +213,12 @@ fields.forEach(f=>{
   });
 });
 
-/* ---------- BOOKING ---------- */
+/* Booking */
 bookingDate.value = today;
 bookingForm.addEventListener("submit",async e=>{
   e.preventDefault();
   await push(ref(db,`bookings/${bookingDate.value}`),{
-    name:userName.value,
+    name:userName.value.trim(),
     date:bookingDate.value,
     bigWasher:bigWasher.value,
     smallWasher:smallWasher.value,
@@ -206,7 +229,7 @@ bookingForm.addEventListener("submit",async e=>{
   bookingForm.reset();
 });
 
-/* ---------- METRICS + INSIGHTS ---------- */
+/* Metrics */
 async function loadMetrics(){
   const snap = await get(ref(db,"bookings"));
   if(!snap.exists()) return;
@@ -228,32 +251,40 @@ async function loadMetrics(){
     });
   });
 
-  const max=o=>Object.entries(o).sort((a,b)=>b[1]-a[1])[0];
+  const sortTop=(o)=>Object.entries(o).sort((a,b)=>b[1]-a[1]);
 
-  if(max(monthly))
-    document.getElementById("topMonth").innerText =
-      `🏅 Top Booker (This Month): ${max(monthly)[0]} (${max(monthly)[1]})`;
+  const topMonth=sortTop(monthly);
+  const topAll=sortTop(allTime);
 
-  if(max(allTime))
-    document.getElementById("topAllTime").innerText =
-      `🌟 All-Time Legend: ${max(allTime)[0]} (${max(allTime)[1]})`;
+  if(topMonth[0])
+    topMonthDiv.innerText=`🏅 Top Booker (This Month): ${topMonth[0][0]} (${topMonth[0][1]})`;
+
+  if(topAll[0])
+    topAllTimeDiv.innerText=`🌟 All-Time Legend: ${topAll[0][0]} (${topAll[0][1]})`;
+
+  top10Month.innerHTML=topMonth.slice(0,10).map(
+    x=>`<li>${x[0]} – ${x[1]} slots</li>`
+  ).join("");
+
+  top10All.innerHTML=topAll.slice(0,10).map(
+    x=>`<li>${x[0]} – ${x[1]} slots</li>`
+  ).join("");
 
   const insights=[];
-  if(max(night)) insights.push(`🦉 Night Owl of the Month: ${max(night)[0]}`);
-  if(max(early)) insights.push(`🐓 Early Bird of the Month: ${max(early)[0]}`);
-
+  if(topMonth[0]) insights.push(`🦉 Night Owl of the Month: ${Object.keys(night)[0]||"—"}`);
+  if(topMonth[0]) insights.push(`🐓 Early Bird of the Month: ${Object.keys(early)[0]||"—"}`);
   rotateInsights(insights);
 }
 
-/* ---------- ROTATING TOAST ---------- */
-let idx=0;
+/* Toast rotation */
+let i=0;
 function rotateInsights(arr){
   if(!arr.length) return;
   setInterval(()=>{
-    insightToast.innerText=arr[idx%arr.length];
+    insightToast.innerText=arr[i%arr.length];
     insightToast.classList.remove("hidden");
     setTimeout(()=>insightToast.classList.add("hidden"),3500);
-    idx++;
+    i++;
   },5000);
 }
 
