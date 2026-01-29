@@ -4,18 +4,15 @@
 <meta charset="UTF-8" />
 <title>Laundry Slot Booking H-8</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
 <style>
 * { box-sizing: border-box; }
-
 body {
   margin: 0;
   font-family: 'Poppins', sans-serif;
   background: linear-gradient(135deg, #f0f4ff, #e1ecff);
 }
-
 .hidden { display: none !important; }
 
 .page {
@@ -25,32 +22,23 @@ body {
   display: flex;
   gap: 20px;
 }
-
 .container, .side {
   background: #fff;
   padding: 30px;
   border-radius: 15px;
   box-shadow: 0 8px 20px rgba(0,0,0,0.1);
 }
-
 .container { flex: 1; }
 .side { width: 320px; height: fit-content; }
 
-label {
-  display: block;
-  font-weight: 600;
-  margin-top: 15px;
-}
-
+label { display: block; font-weight: 600; margin-top: 15px; }
 input, select, button {
   width: 100%;
   padding: 10px;
   margin-top: 6px;
   border-radius: 8px;
   border: 1px solid #ccc;
-  font-family: 'Poppins', sans-serif;
 }
-
 button {
   margin-top: 20px;
   background: #007BFF;
@@ -59,8 +47,32 @@ button {
   border: none;
   cursor: pointer;
 }
-
 .admin-btn { background: #6c757d; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+th, td {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  text-align: center;
+}
+th { background: #007BFF; color: white; }
+
+.live { color: green; font-weight: bold; }
+.upcoming { color: #0d6efd; font-weight: bold; }
+.completed { color: #6c757d; font-weight: bold; }
+
+.delete {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
 
 .metric {
   background: #f8f9fa;
@@ -69,12 +81,7 @@ button {
   margin-bottom: 12px;
   font-size: 0.95rem;
 }
-
-ol {
-  padding-left: 20px;
-  margin: 0;
-  font-size: 0.9rem;
-}
+ol { padding-left: 20px; margin: 0; font-size: 0.9rem; }
 
 /* MODAL */
 .modal {
@@ -86,7 +93,6 @@ ol {
   justify-content: center;
   z-index: 1000;
 }
-
 .modal-box {
   background: #fff;
   padding: 25px;
@@ -112,9 +118,7 @@ ol {
   pointer-events: none;
   transition: opacity 0.3s;
 }
-.toast.show {
-  opacity: 1;
-}
+.toast.show { opacity: 1; }
 </style>
 </head>
 
@@ -122,7 +126,6 @@ ol {
 
 <!-- USER PAGE -->
 <div class="page" id="userPage">
-
   <div class="container">
     <h2>🧺 Laundry Slot Booking H-8</h2>
 
@@ -133,17 +136,10 @@ ol {
       <label>Date</label>
       <input type="date" id="bookingDate" required>
 
-      <label>Big Washer</label>
-      <select id="bigWasher"></select>
-
-      <label>Small Washer</label>
-      <select id="smallWasher"></select>
-
-      <label>Big Dryer</label>
-      <select id="bigDryer"></select>
-
-      <label>Small Dryer</label>
-      <select id="smallDryer"></select>
+      <label>Big Washer</label><select id="bigWasher"></select>
+      <label>Small Washer</label><select id="smallWasher"></select>
+      <label>Big Dryer</label><select id="bigDryer"></select>
+      <label>Small Dryer</label><select id="smallDryer"></select>
 
       <button type="submit">✅ Book Slot</button>
     </form>
@@ -153,13 +149,10 @@ ol {
 
   <div class="side">
     <h3>🏆 Laundry Legends</h3>
-
     <div class="metric" id="topMonth">🏅 Top Booker (This Month): —</div>
     <div class="metric" id="topAllTime">🌟 All-Time Legend: —</div>
-
     <h4>📅 Top 10 – This Month</h4>
     <ol id="top10Month"></ol>
-
     <h4>🌟 Top 10 – All Time</h4>
     <ol id="top10All"></ol>
   </div>
@@ -169,12 +162,17 @@ ol {
 <div class="container hidden" id="adminPage">
   <h2>🛠️ Admin Dashboard</h2>
 
-  <table style="width:100%;margin-top:20px;border-collapse:collapse">
+  <label>Select Date</label>
+  <input type="date" id="adminDate">
+
+  <table>
     <thead>
-      <tr style="background:#007BFF;color:white">
-        <th style="padding:10px">Name</th>
-        <th>Date</th>
-        <th>Machines Booked</th>
+      <tr>
+        <th>Name</th>
+        <th>Machine</th>
+        <th>Slot</th>
+        <th>Status</th>
+        <th>Action</th>
       </tr>
     </thead>
     <tbody id="adminTable"></tbody>
@@ -196,7 +194,7 @@ ol {
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-import { getDatabase, ref, push, get } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+import { getDatabase, ref, push, get, update, remove, child } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
 
 /* Firebase */
 const firebaseConfig = {
@@ -212,20 +210,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-/* DOM refs */
-const userPage = document.getElementById("userPage");
-const adminPage = document.getElementById("adminPage");
-const modal = document.getElementById("passwordModal");
-const toast = document.getElementById("toast");
-
-modal.classList.add("hidden"); // FORCE HIDDEN ON LOAD
-
-/* Init */
-const today = new Date().toLocaleDateString("en-CA");
-const month = today.slice(0,7);
-bookingDate.value = today;
-
+/* Constants */
 const fields = ["bigWasher","smallWasher","bigDryer","smallDryer"];
+const today = new Date().toLocaleDateString("en-CA");
+bookingDate.value = today;
+adminDate.value = today;
 
 /* Slots */
 const slots = [...Array(24)].map((_,i)=>{
@@ -233,13 +222,12 @@ const slots = [...Array(24)].map((_,i)=>{
   const e = String((i+1)%24).padStart(2,"0")+":00";
   return `${s} - ${e}`;
 });
-
 fields.forEach(f=>{
-  const sel = document.getElementById(f);
-  sel.innerHTML = `<option value="">-- Select Slot --</option>`;
+  const sel=document.getElementById(f);
+  sel.innerHTML='<option value="">-- Select Slot --</option>';
   slots.forEach(s=>{
-    const o = document.createElement("option");
-    o.value = o.textContent = s;
+    const o=document.createElement("option");
+    o.value=o.textContent=s;
     sel.appendChild(o);
   });
 });
@@ -248,72 +236,95 @@ fields.forEach(f=>{
 bookingForm.onsubmit = async e => {
   e.preventDefault();
   await push(ref(db,`bookings/${bookingDate.value}`),{
-    name: userName.value.trim(),
-    date: bookingDate.value,
-    bigWasher: bigWasher.value,
-    smallWasher: smallWasher.value,
-    bigDryer: bigDryer.value,
-    smallDryer: smallDryer.value
+    name:userName.value.trim(),
+    date:bookingDate.value,
+    bigWasher:bigWasher.value,
+    smallWasher:smallWasher.value,
+    bigDryer:bigDryer.value,
+    smallDryer:smallDryer.value
   });
   alert("✅ Booking Successful");
   bookingForm.reset();
 };
 
-/* Admin */
-adminLoginBtn.onclick = () => {
-  modal.classList.remove("hidden");
-  adminPassword.value = "";
-};
-
-confirmAdminLogin.onclick = () => {
-  if (adminPassword.value === "admin123") {
-    modal.classList.add("hidden");
+/* Admin login */
+passwordModal.classList.add("hidden");
+adminLoginBtn.onclick = ()=>passwordModal.classList.remove("hidden");
+confirmAdminLogin.onclick = ()=>{
+  if(adminPassword.value==="admin123"){
+    passwordModal.classList.add("hidden");
     userPage.classList.add("hidden");
     adminPage.classList.remove("hidden");
-    loadAdminData();
-  } else {
-    alert("❌ Wrong password");
-  }
+    loadAdmin();
+  } else alert("❌ Wrong password");
 };
-
-window.logoutAdmin = () => {
+window.logoutAdmin=()=>{
   adminPage.classList.add("hidden");
   userPage.classList.remove("hidden");
 };
 
-/* Admin Data */
-async function loadAdminData(){
-  const tbody = document.getElementById("adminTable");
-  tbody.innerHTML = "";
-
-  const snap = await get(ref(db,"bookings"));
-  if(!snap.exists()) return;
-
-  Object.values(snap.val()).forEach(day=>{
-    Object.values(day).forEach(b=>{
-      const machines = [];
-      if(b.bigWasher) machines.push("Big Washer");
-      if(b.smallWasher) machines.push("Small Washer");
-      if(b.bigDryer) machines.push("Big Dryer");
-      if(b.smallDryer) machines.push("Small Dryer");
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td style="padding:8px">${b.name}</td>
-        <td>${b.date}</td>
-        <td>${machines.join(", ")}</td>`;
-      tbody.appendChild(tr);
-    });
-  });
+/* Time helpers */
+function nowMinutes(){
+  const d=new Date();
+  return d.getHours()*60 + d.getMinutes();
 }
 
-/* Metrics */
+/* Load admin (DAY-WISE, MACHINE-WISE) */
+async function loadAdmin(){
+  adminTable.innerHTML="";
+  const date = adminDate.value;
+  const snap = await get(child(ref(db),"bookings/"+date));
+  if(!snap.exists()) return;
+
+  for(const [key,b] of Object.entries(snap.val())){
+    fields.forEach(f=>{
+      if(!b[f]) return;
+
+      const start = parseInt(b[f]);
+      const now = nowMinutes();
+
+      let status, cls;
+      if(date < today){ status="COMPLETED"; cls="completed"; }
+      else if(date > today){ status="UPCOMING"; cls="upcoming"; }
+      else if(start <= now && now < start+60){ status="LIVE"; cls="live"; }
+      else if(start+60 <= now){ status="COMPLETED"; cls="completed"; }
+      else { status="UPCOMING"; cls="upcoming"; }
+
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td>${b.name}</td>
+        <td>${f}</td>
+        <td>${b[f]}</td>
+        <td class="${cls}">${status}</td>
+        <td>
+          <button class="delete"
+            onclick="deleteMachine('${key}','${f}')">Delete</button>
+        </td>`;
+      adminTable.appendChild(tr);
+    });
+  }
+}
+
+window.deleteMachine = async (key,f)=>{
+  if(!confirm(`Delete ${f} booking?`)) return;
+  const base = ref(db,`bookings/${adminDate.value}/${key}`);
+  await update(base,{[f]:""});
+  const snap = await get(base);
+  if(snap.exists() && fields.every(x=>!snap.val()[x])){
+    await remove(base);
+  }
+  loadAdmin();
+};
+
+adminDate.addEventListener("change",loadAdmin);
+
+/* METRICS (unchanged, stable) */
+const month = today.slice(0,7);
 async function loadMetrics(){
   const snap = await get(ref(db,"bookings"));
   if(!snap.exists()) return;
 
   const monthly={}, allTime={}, night={}, early={};
-
   Object.values(snap.val()).forEach(day=>{
     Object.values(day).forEach(b=>{
       allTime[b.name]=(allTime[b.name]||0)+1;
@@ -330,19 +341,16 @@ async function loadMetrics(){
   });
 
   const sort=o=>Object.entries(o).sort((a,b)=>b[1]-a[1]);
-
   const m=sort(monthly), a=sort(allTime);
 
   topMonth.textContent = m[0] ? `🏅 Top Booker (This Month): ${m[0][0]} (${m[0][1]})` : "—";
   topAllTime.textContent = a[0] ? `🌟 All-Time Legend: ${a[0][0]} (${a[0][1]})` : "—";
-
   top10Month.innerHTML = m.slice(0,10).map(x=>`<li>${x[0]} – ${x[1]}</li>`).join("");
   top10All.innerHTML = a.slice(0,10).map(x=>`<li>${x[0]} – ${x[1]}</li>`).join("");
 
   const insights=[];
   if(sort(night)[0]) insights.push(`🦉 Night Owl: ${sort(night)[0][0]} (${sort(night)[0][1]})`);
   if(sort(early)[0]) insights.push(`🐓 Early Bird: ${sort(early)[0][0]} (${sort(early)[0][1]})`);
-
   rotateInsights(insights);
 }
 
@@ -350,7 +358,7 @@ function rotateInsights(arr){
   if(!arr.length) return;
   let i=0;
   setInterval(()=>{
-    toast.textContent = arr[i % arr.length];
+    toast.textContent=arr[i%arr.length];
     toast.classList.add("show");
     setTimeout(()=>toast.classList.remove("show"),3500);
     i++;
