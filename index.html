@@ -76,7 +76,7 @@
 
     .admin-btn { background: #6c757d; margin-top: 30px; }
 
-    /* 🔐 MODAL */
+    /* MODAL */
     .modal {
       position: fixed;
       inset: 0;
@@ -96,7 +96,7 @@
       text-align: center;
     }
 
-    /* 🔔 INSIGHT TOAST */
+    /* INSIGHT TOAST */
     .toast {
       position: fixed;
       bottom: 20px;
@@ -173,18 +173,19 @@
 <div class="modal hidden" id="passwordModal">
   <div class="modal-box">
     <h3>Admin Login</h3>
-    <input type="password" id="adminPassword" placeholder="Enter admin password"/>
+    <input type="password" id="adminPassword" placeholder="Enter admin password">
     <button id="confirmAdminLogin">Login</button>
   </div>
 </div>
 
-<!-- 🔔 INSIGHT TOAST -->
+<!-- INSIGHT TOAST -->
 <div id="insightToast" class="toast hidden"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import { getDatabase, ref, push, get, child, update, remove } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
 
+/* ---------------- FIREBASE ---------------- */
 const firebaseConfig = {
   apiKey: "AIzaSyBfU-aqLYHF_X0Rwv0WqZtB_M0cdacoDg",
   authDomain: "launry-booking-h8.firebaseapp.com",
@@ -198,21 +199,36 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const modal = document.getElementById("passwordModal");
-modal.classList.add("hidden");
+/* ---------------- DOM REFERENCES ---------------- */
+const userView = document.getElementById("userView");
+const adminView = document.getElementById("adminView");
+const adminLoginBtn = document.getElementById("adminLoginBtn");
+const passwordModal = document.getElementById("passwordModal");
+const adminPassword = document.getElementById("adminPassword");
+const confirmAdminLogin = document.getElementById("confirmAdminLogin");
+const bookingForm = document.getElementById("bookingForm");
+const bookingDate = document.getElementById("bookingDate");
+const adminDate = document.getElementById("adminDate");
+const adminTable = document.getElementById("adminTable");
+const toast = document.getElementById("insightToast");
 
+/* ---------------- INIT ---------------- */
+passwordModal.classList.add("hidden");
 const today = new Date().toLocaleDateString("en-CA");
-const currentMonth = today.slice(0,7);
+bookingDate.value = today;
+bookingDate.min = today;
+adminDate.value = today;
 
 const fields = ["bigWasher","smallWasher","bigDryer","smallDryer"];
 
+/* ---------------- TIME SLOTS ---------------- */
 const timeSlots = Array.from({length:24},(_,i)=>{
   const s = String(i).padStart(2,"0")+":00";
   const e = String((i+1)%24).padStart(2,"0")+":00";
   return `${s} - ${e}`;
 });
 
-function populateSlots() {
+function populateSlots(){
   fields.forEach(f=>{
     const sel=document.getElementById(f);
     sel.innerHTML='<option value="">-- Select Slot --</option>';
@@ -225,54 +241,151 @@ function populateSlots() {
 }
 populateSlots();
 
-/* 🔔 MONTHLY INSIGHTS (OPTION A) */
-async function loadMonthlyInsights() {
-  const snap = await get(ref(db,"bookings"));
-  if (!snap.exists()) return;
+/* ---------------- BOOKING ---------------- */
+bookingForm.addEventListener("submit",async e=>{
+  e.preventDefault();
+  const data={
+    name:userName.value.trim(),
+    date:bookingDate.value,
+    bigWasher:bigWasher.value,
+    smallWasher:smallWasher.value,
+    bigDryer:bigDryer.value,
+    smallDryer:smallDryer.value
+  };
 
-  const night={}, early={}, total={};
-  let totalSlots=0;
+  const snap=await get(child(ref(db),`bookings/${data.date}`));
+  if(snap.exists()){
+    for(const b of Object.values(snap.val())){
+      for(const f of fields){
+        if(data[f] && b[f]===data[f]){
+          alert("⚠️ Slot already booked");
+          return;
+        }
+      }
+    }
+  }
+
+  await push(ref(db,`bookings/${data.date}`),data);
+  alert("✅ Booking Successful");
+  bookingForm.reset();
+  bookingDate.value=today;
+});
+
+/* ---------------- ADMIN LOGIN ---------------- */
+adminLoginBtn.onclick=()=>{
+  passwordModal.classList.remove("hidden");
+  adminPassword.value="";
+  adminPassword.focus();
+};
+
+confirmAdminLogin.onclick=()=>{
+  if(adminPassword.value==="admin123"){
+    passwordModal.classList.add("hidden");
+    userView.classList.add("hidden");
+    adminView.classList.remove("hidden");
+    loadAdmin();
+  } else alert("❌ Wrong password");
+};
+
+window.logoutAdmin=()=>{
+  adminView.classList.add("hidden");
+  userView.classList.remove("hidden");
+};
+
+/* ---------------- ADMIN LOGIC ---------------- */
+function nowMinutes(){
+  const d=new Date();
+  return d.getHours()*60+d.getMinutes();
+}
+
+async function loadAdmin(){
+  adminTable.innerHTML="";
+  const snap=await get(child(ref(db),`bookings/${adminDate.value}`));
+  if(!snap.exists()) return;
+
+  for(const [key,b] of Object.entries(snap.val())){
+    fields.forEach(f=>{
+      if(!b[f]) return;
+
+      const [h,m]=b[f].split(" - ")[0].split(":").map(Number);
+      const start=h*60+m;
+      const now=nowMinutes();
+
+      let status="UPCOMING",cls="upcoming";
+      if(adminDate.value<today){status="COMPLETED";cls="completed";}
+      else if(adminDate.value===today){
+        if(start<=now && now<start+60){status="LIVE";cls="live";}
+        else if(start+60<=now){status="COMPLETED";cls="completed";}
+      }
+
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td>${b.name}</td>
+        <td>${f}</td>
+        <td>${b[f]}</td>
+        <td class="${cls}">${status}</td>
+        <td>
+          <button class="delete"
+            onclick="deleteMachine('${key}','${f}')">
+            Delete
+          </button>
+        </td>`;
+      adminTable.appendChild(tr);
+    });
+  }
+}
+
+window.deleteMachine=async(key,f)=>{
+  const base=ref(db,`bookings/${adminDate.value}/${key}`);
+  await update(base,{[f]:""});
+  const snap=await get(base);
+  if(snap.exists() && fields.every(x=>!snap.val()[x])) await remove(base);
+  loadAdmin();
+};
+
+adminDate.addEventListener("change",loadAdmin);
+
+/* ---------------- MONTHLY INSIGHTS ---------------- */
+async function loadMonthlyInsights(){
+  const snap=await get(ref(db,"bookings"));
+  if(!snap.exists()) return;
+
+  const month=today.slice(0,7);
+  const night={},early={};
+  let total=0;
 
   Object.values(snap.val()).forEach(day=>{
     Object.values(day).forEach(b=>{
-      if(!b.date.startsWith(currentMonth)) return;
+      if(!b.date.startsWith(month)) return;
       fields.forEach(f=>{
         if(!b[f]) return;
-        totalSlots++;
-        const hour=parseInt(b[f].split(":")[0]);
-        if(hour>=0 && hour<5){
-          night[b.name]=(night[b.name]||0)+1;
-        }
-        if(hour>=5 && hour<7){
-          early[b.name]=(early[b.name]||0)+1;
-        }
-        total[f]=(total[f]||0)+1;
+        total++;
+        const hour=parseInt(b[f]);
+        if(hour<5) night[b.name]=(night[b.name]||0)+1;
+        if(hour>=5 && hour<7) early[b.name]=(early[b.name]||0)+1;
       });
     });
   });
 
-  const max=(obj)=>Object.entries(obj).sort((a,b)=>b[1]-a[1])[0];
-
+  const max=o=>Object.entries(o).sort((a,b)=>b[1]-a[1])[0];
   const insights=[];
-  if(totalSlots===0){
-    insights.push("✨ Be the first one to do laundry this month!");
-  } else {
-    if(max(night)) insights.push(`🦉 Night Owl of the month: ${max(night)[0]} (${max(night)[1]} late-night washes)`);
-    if(max(early)) insights.push(`🐓 Early Bird of the month: ${max(early)[0]} (${max(early)[1]} sunrise washes)`);
-    if(max(total)) insights.push(`🏆 ${max(total)[0]} is the most used machine this month`);
-    insights.push(`🧺 Total laundry slots booked this month: ${totalSlots}`);
+  if(total===0){
+    insights.push("✨ Be the first to do laundry this month!");
+  }else{
+    if(max(night)) insights.push(`🦉 Night Owl of the month: ${max(night)[0]} (${max(night)[1]} slots)`);
+    if(max(early)) insights.push(`🐓 Early Bird of the month: ${max(early)[0]} (${max(early)[1]} slots)`);
+    insights.push(`🧺 ${total} laundry slots booked this month`);
   }
   rotateInsights(insights);
 }
 
-let insightIndex=0;
-function rotateInsights(insights){
-  const toast=document.getElementById("insightToast");
+let i=0;
+function rotateInsights(arr){
   setInterval(()=>{
-    toast.innerText=insights[insightIndex%insights.length];
+    toast.innerText=arr[i%arr.length];
     toast.classList.remove("hidden");
     setTimeout(()=>toast.classList.add("hidden"),3500);
-    insightIndex++;
+    i++;
   },5000);
 }
 
