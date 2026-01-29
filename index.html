@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>Laundry Slot Booking H-8</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
   <style>
@@ -18,9 +17,9 @@
     .page {
       display: flex;
       gap: 20px;
-      align-items: flex-start;
       max-width: 1300px;
       margin: auto;
+      padding: 20px;
     }
 
     .container {
@@ -29,7 +28,6 @@
       padding: 30px;
       border-radius: 15px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-      margin: 30px 0;
     }
 
     .side-metrics {
@@ -37,43 +35,13 @@
       background: #fff;
       padding: 20px;
       border-radius: 15px;
-      margin-top: 30px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.1);
       position: sticky;
       top: 20px;
+      height: fit-content;
     }
 
-    .side-metrics h3 {
-      text-align: center;
-      margin-top: 0;
-    }
-
-    .metric {
-      background: #f8f9fa;
-      padding: 12px;
-      border-radius: 10px;
-      margin-bottom: 12px;
-      font-size: 0.95rem;
-    }
-
-    .leaderboard {
-      margin-top: 10px;
-    }
-
-    .leaderboard h4 {
-      margin: 10px 0 5px;
-      font-size: 1rem;
-    }
-
-    .leaderboard ol {
-      padding-left: 20px;
-      margin: 0;
-      font-size: 0.9rem;
-    }
-
-    .leaderboard li {
-      margin-bottom: 4px;
-    }
+    h2, h3 { margin-top: 0; }
 
     label { font-weight: 600; margin-top: 15px; display: block; }
 
@@ -97,7 +65,36 @@
 
     .admin-btn { background: #6c757d; }
 
-    .hidden { display: none !important; }
+    .metric {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      font-size: 0.95rem;
+    }
+
+    ol { padding-left: 20px; margin: 0; font-size: 0.9rem; }
+
+    /* MODAL */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal.hidden { display: none; }
+
+    .modal-box {
+      background: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      width: 320px;
+      text-align: center;
+    }
 
     /* TOAST */
     .toast {
@@ -115,10 +112,7 @@
       transition: opacity 0.4s ease;
     }
 
-    .toast.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
+    .toast.hidden { opacity: 0; pointer-events: none; }
   </style>
 </head>
 
@@ -126,8 +120,8 @@
 
 <div class="page">
 
-  <!-- MAIN USER VIEW -->
-  <div class="container">
+  <!-- USER VIEW -->
+  <div class="container" id="userView">
     <h2>🧺 Laundry Slot Booking H-8</h2>
 
     <form id="bookingForm">
@@ -151,6 +145,8 @@
 
       <button type="submit">✅ Book Slot</button>
     </form>
+
+    <button class="admin-btn" id="adminLoginBtn">🔐 Admin Login</button>
   </div>
 
   <!-- SIDE METRICS -->
@@ -160,17 +156,22 @@
     <div class="metric" id="topMonth">🏅 Top Booker (This Month): —</div>
     <div class="metric" id="topAllTime">🌟 All-Time Legend: —</div>
 
-    <div class="leaderboard">
-      <h4>📅 Top 10 – This Month</h4>
-      <ol id="top10Month"></ol>
-    </div>
+    <h4>📅 Top 10 – This Month</h4>
+    <ol id="top10Month"></ol>
 
-    <div class="leaderboard">
-      <h4>🌟 Top 10 – All Time</h4>
-      <ol id="top10All"></ol>
-    </div>
+    <h4>🌟 Top 10 – All Time</h4>
+    <ol id="top10All"></ol>
   </div>
 
+</div>
+
+<!-- ADMIN LOGIN MODAL -->
+<div class="modal hidden" id="passwordModal">
+  <div class="modal-box">
+    <h3>Admin Login</h3>
+    <input type="password" id="adminPassword" placeholder="Enter admin password">
+    <button id="confirmAdminLogin">Login</button>
+  </div>
 </div>
 
 <div id="insightToast" class="toast hidden"></div>
@@ -179,6 +180,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import { getDatabase, ref, push, get } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
 
+/* Firebase */
 const firebaseConfig = {
   apiKey: "AIzaSyBfU-aqLYHF_X0Rwv0WqZtB_M0cdacoDg",
   authDomain: "launry-booking-h8.firebaseapp.com",
@@ -192,11 +194,20 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const fields = ["bigWasher","smallWasher","bigDryer","smallDryer"];
+/* DOM */
+const topMonthDiv = document.getElementById("topMonth");
+const topAllTimeDiv = document.getElementById("topAllTime");
+const top10Month = document.getElementById("top10Month");
+const top10All = document.getElementById("top10All");
+const toast = document.getElementById("insightToast");
+
 const today = new Date().toLocaleDateString("en-CA");
 const month = today.slice(0,7);
+bookingDate.value = today;
 
-/* Populate slots */
+const fields = ["bigWasher","smallWasher","bigDryer","smallDryer"];
+
+/* Slots */
 const timeSlots = Array.from({length:24},(_,i)=>{
   const s = String(i).padStart(2,"0")+":00";
   const e = String((i+1)%24).padStart(2,"0")+":00";
@@ -214,8 +225,7 @@ fields.forEach(f=>{
 });
 
 /* Booking */
-bookingDate.value = today;
-bookingForm.addEventListener("submit",async e=>{
+bookingForm.addEventListener("submit", async e=>{
   e.preventDefault();
   await push(ref(db,`bookings/${bookingDate.value}`),{
     name:userName.value.trim(),
@@ -251,44 +261,44 @@ async function loadMetrics(){
     });
   });
 
-  const sortTop=(o)=>Object.entries(o).sort((a,b)=>b[1]-a[1]);
+  const sort=o=>Object.entries(o).sort((a,b)=>b[1]-a[1]);
 
-  const topMonth=sortTop(monthly);
-  const topAll=sortTop(allTime);
+  const m=sort(monthly);
+  const a=sort(allTime);
 
-  if(topMonth[0])
-    topMonthDiv.innerText=`🏅 Top Booker (This Month): ${topMonth[0][0]} (${topMonth[0][1]})`;
+  if(m[0]) topMonthDiv.innerText=`🏅 Top Booker (This Month): ${m[0][0]} (${m[0][1]})`;
+  if(a[0]) topAllTimeDiv.innerText=`🌟 All-Time Legend: ${a[0][0]} (${a[0][1]})`;
 
-  if(topAll[0])
-    topAllTimeDiv.innerText=`🌟 All-Time Legend: ${topAll[0][0]} (${topAll[0][1]})`;
-
-  top10Month.innerHTML=topMonth.slice(0,10).map(
-    x=>`<li>${x[0]} – ${x[1]} slots</li>`
-  ).join("");
-
-  top10All.innerHTML=topAll.slice(0,10).map(
-    x=>`<li>${x[0]} – ${x[1]} slots</li>`
-  ).join("");
+  top10Month.innerHTML=m.slice(0,10).map(x=>`<li>${x[0]} – ${x[1]}</li>`).join("");
+  top10All.innerHTML=a.slice(0,10).map(x=>`<li>${x[0]} – ${x[1]}</li>`).join("");
 
   const insights=[];
-  if(topMonth[0]) insights.push(`🦉 Night Owl of the Month: ${Object.keys(night)[0]||"—"}`);
-  if(topMonth[0]) insights.push(`🐓 Early Bird of the Month: ${Object.keys(early)[0]||"—"}`);
+  if(Object.keys(night).length) insights.push(`🦉 Night Owl: ${sort(night)[0][0]}`);
+  if(Object.keys(early).length) insights.push(`🐓 Early Bird: ${sort(early)[0][0]}`);
+
   rotateInsights(insights);
 }
 
-/* Toast rotation */
+/* Toast */
 let i=0;
 function rotateInsights(arr){
   if(!arr.length) return;
   setInterval(()=>{
-    insightToast.innerText=arr[i%arr.length];
-    insightToast.classList.remove("hidden");
-    setTimeout(()=>insightToast.classList.add("hidden"),3500);
+    toast.innerText=arr[i%arr.length];
+    toast.classList.remove("hidden");
+    setTimeout(()=>toast.classList.add("hidden"),3500);
     i++;
   },5000);
 }
 
 loadMetrics();
+
+/* Admin modal */
+adminLoginBtn.onclick=()=>passwordModal.classList.remove("hidden");
+confirmAdminLogin.onclick=()=>{
+  if(adminPassword.value==="admin123") alert("Admin access OK (dashboard omitted here)");
+  else alert("Wrong password");
+};
 </script>
 
 </body>
