@@ -1,372 +1,203 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Laundry Slot Booking H-8</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-
-<style>
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  font-family: 'Poppins', sans-serif;
-  background: linear-gradient(135deg, #f0f4ff, #e1ecff);
-}
-.hidden { display: none !important; }
-
-.page {
-  max-width: 1300px;
-  margin: auto;
-  padding: 20px;
-  display: flex;
-  gap: 20px;
-}
-.container, .side {
-  background: #fff;
-  padding: 30px;
-  border-radius: 15px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-}
-.container { flex: 1; }
-.side { width: 320px; height: fit-content; }
-
-label { display: block; font-weight: 600; margin-top: 15px; }
-input, select, button {
-  width: 100%;
-  padding: 10px;
-  margin-top: 6px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-}
-button {
-  margin-top: 20px;
-  background: #007BFF;
-  color: white;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-}
-.admin-btn { background: #6c757d; }
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
-th, td {
-  padding: 10px;
-  border-bottom: 1px solid #ddd;
-  text-align: center;
-}
-th { background: #007BFF; color: white; }
-
-.live { color: green; font-weight: bold; }
-.upcoming { color: #0d6efd; font-weight: bold; }
-.completed { color: #6c757d; font-weight: bold; }
-
-.delete {
-  background: #dc3545;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.metric {
-  background: #f8f9fa;
-  padding: 12px;
-  border-radius: 10px;
-  margin-bottom: 12px;
-  font-size: 0.95rem;
-}
-ol { padding-left: 20px; margin: 0; font-size: 0.9rem; }
-
-/* MODAL */
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-.modal-box {
-  background: #fff;
-  padding: 25px;
-  border-radius: 12px;
-  width: 320px;
-  text-align: center;
-}
-
-/* TOAST */
-.toast {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #212529;
-  color: white;
-  padding: 12px 18px;
-  border-radius: 10px;
-  font-size: 0.95rem;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-  z-index: 999;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s;
-}
-.toast.show { opacity: 1; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Laundry Slot Booking H-8</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #f0f4ff, #e1ecff);
+      margin: 0; padding: 0;
+    }
+    .container {
+      max-width: 700px; margin: 40px auto; background: #fff; padding: 30px;
+      border-radius: 15px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+    h2, h3 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
+    label { display: block; margin-top: 20px; color: #2c3e50; font-weight: 600; }
+    input, select, button {
+      width: 100%; padding: 12px; margin-top: 8px;
+      border-radius: 8px; border: 1px solid #ccc; font-size: 1rem;
+      font-family: 'Poppins', sans-serif;
+    }
+    button {
+      background-color: #007BFF; color: white; font-weight: 600; border: none;
+      margin-top: 30px;
+    }
+    button:hover { background-color: #0056b3; }
+    #showBookingsBtn { background-color: #6c757d; margin-top: 20px; }
+    #showBookingsBtn:hover { background-color: #495057; }
+    .booking-entry {
+      background: #f1f3f5; padding: 15px;
+      border-left: 5px solid #007BFF;
+      border-radius: 8px; margin-bottom: 12px;
+      white-space: pre-line;
+    }
+    .current-slot {
+      background-color: #e6ffe6;
+      border-left: 5px solid green;
+      position: relative;
+    }
+    .current-slot::after {
+      content: "🟢 Live Now";
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: green;
+    }
+    #filterOptions { display: flex; gap: 15px; flex-wrap: wrap; }
+  </style>
 </head>
 
 <body>
+<div class="container">
+  <h2>🧺 Laundry Slot Booking H-8</h2>
 
-<!-- USER PAGE -->
-<div class="page" id="userPage">
-  <div class="container">
-    <h2>🧺 Laundry Slot Booking H-8</h2>
+  <form id="bookingForm">
+    <label>Name</label>
+    <input id="userName" required>
 
-    <form id="bookingForm">
-      <label>Name</label>
-      <input id="userName" required>
+    <label>Select Date</label>
+    <input type="date" id="bookingDate" required>
 
-      <label>Date</label>
-      <input type="date" id="bookingDate" required>
+    <label>Big Washer</label>
+    <select id="bigWasher"><option value="">-- Select Slot --</option></select>
 
-      <label>Big Washer</label><select id="bigWasher"></select>
-      <label>Small Washer</label><select id="smallWasher"></select>
-      <label>Big Dryer</label><select id="bigDryer"></select>
-      <label>Small Dryer</label><select id="smallDryer"></select>
+    <label>Small Washer</label>
+    <select id="smallWasher"><option value="">-- Select Slot --</option></select>
 
-      <button type="submit">✅ Book Slot</button>
-    </form>
+    <label>Big Dryer</label>
+    <select id="bigDryer"><option value="">-- Select Slot --</option></select>
 
-    <button class="admin-btn" id="adminLoginBtn">🔐 Admin Login</button>
-  </div>
+    <label>Small Dryer</label>
+    <select id="smallDryer"><option value="">-- Select Slot --</option></select>
 
-  <div class="side">
-    <h3>🏆 Laundry Legends</h3>
-    <div class="metric" id="topMonth">🏅 Top Booker (This Month): —</div>
-    <div class="metric" id="topAllTime">🌟 All-Time Legend: —</div>
-    <h4>📅 Top 10 – This Month</h4>
-    <ol id="top10Month"></ol>
-    <h4>🌟 Top 10 – All Time</h4>
-    <ol id="top10All"></ol>
-  </div>
-</div>
+    <button type="submit">✅ Book Slot</button>
+  </form>
 
-<!-- ADMIN PAGE -->
-<div class="container hidden" id="adminPage">
-  <h2>🛠️ Admin Dashboard</h2>
+  <button id="showBookingsBtn">📅 Show Bookings</button>
 
-  <label>Select Date</label>
-  <input type="date" id="adminDate">
-
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Machine</th>
-        <th>Slot</th>
-        <th>Status</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody id="adminTable"></tbody>
-  </table>
-
-  <button class="admin-btn" onclick="logoutAdmin()">⬅ Back to User</button>
-</div>
-
-<!-- LOGIN MODAL -->
-<div class="modal hidden" id="passwordModal">
-  <div class="modal-box">
-    <h3>Admin Login</h3>
-    <input type="password" id="adminPassword" placeholder="Enter admin password">
-    <button id="confirmAdminLogin">Login</button>
+  <div id="bookingSection" style="display:none">
+    <h3>📌 Bookings</h3>
+    <div id="filterOptions">
+      <label><input type="checkbox" value="bigWasher"> Big Washer</label>
+      <label><input type="checkbox" value="smallWasher"> Small Washer</label>
+      <label><input type="checkbox" value="bigDryer"> Big Dryer</label>
+      <label><input type="checkbox" value="smallDryer"> Small Dryer</label>
+    </div>
+    <div id="bookingList"></div>
   </div>
 </div>
-
-<div id="toast" class="toast"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-import { getDatabase, ref, push, get, update, remove, child } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+import { getDatabase, ref, push, get, child } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 
-/* Firebase */
 const firebaseConfig = {
-  apiKey: "AIzaSyBfU-aqLYHF_X0Rwv0WqZtB_M0cdacoDg",
+  apiKey: "AIzaSyBfU-aqLYHF_X0Rwv0WqZtZB_M0cdacoDg",
   authDomain: "launry-booking-h8.firebaseapp.com",
   databaseURL: "https://launry-booking-h8-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "launry-booking-h8",
-  storageBucket: "launry-booking-h8.appspot.com",
+  storageBucket: "launry-booking-h8.firebasestorage.app",
   messagingSenderId: "485927717258",
-  appId: "1:485927717258:web:be15abc9f8cd281846e073"
+  appId: "1:485927717258:web:be15abc9f8cd281846e073",
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const auth = getAuth(app);
+signInAnonymously(auth);
 
-/* Constants */
-const fields = ["bigWasher","smallWasher","bigDryer","smallDryer"];
-const today = new Date().toLocaleDateString("en-CA");
-bookingDate.value = today;
-adminDate.value = today;
+const timeSlots = [];
+for (let h = 0; h < 24; h++) {
+  const start = `${String(h).padStart(2,'0')}:00`;
+  const end = `${String((h+1)%24).padStart(2,'0')}:00`;
+  timeSlots.push(`${start} - ${end}`);
+}
 
-/* Slots */
-const slots = [...Array(24)].map((_,i)=>{
-  const s = String(i).padStart(2,"0")+":00";
-  const e = String((i+1)%24).padStart(2,"0")+":00";
-  return `${s} - ${e}`;
-});
-fields.forEach(f=>{
-  const sel=document.getElementById(f);
-  sel.innerHTML='<option value="">-- Select Slot --</option>';
-  slots.forEach(s=>{
-    const o=document.createElement("option");
-    o.value=o.textContent=s;
-    sel.appendChild(o);
+const populateSlots = booked => {
+  ["bigWasher","smallWasher","bigDryer","smallDryer"].forEach(id=>{
+    const s=document.getElementById(id);
+    s.innerHTML='<option value="">-- Select Slot --</option>';
+    timeSlots.forEach(t=>{
+      if(!booked[id]?.includes(t)){
+        s.append(new Option(t,t));
+      }
+    });
   });
-});
+};
 
-/* Booking */
-bookingForm.onsubmit = async e => {
+const loadBookings = async () => {
+  const date = bookingDate.value;
+  if (!date) return;
+
+  const snap = await get(child(ref(db), `bookings/${date}`));
+  const booked = {bigWasher:[],smallWasher:[],bigDryer:[],smallDryer:[]};
+  bookingList.innerHTML="";
+
+  if(snap.exists()){
+    Object.values(snap.val()).forEach(e=>{
+      bookingList.innerHTML +=
+`${e.name} (${e.date})
+Big Washer: ${e.bigWasher||"-"}
+Small Washer: ${e.smallWasher||"-"}
+Big Dryer: ${e.bigDryer||"-"}
+Small Dryer: ${e.smallDryer||"-"}\n\n`;
+
+      if(e.bigWasher) booked.bigWasher.push(e.bigWasher);
+      if(e.smallWasher) booked.smallWasher.push(e.smallWasher);
+      if(e.bigDryer) booked.bigDryer.push(e.bigDryer);
+      if(e.smallDryer) booked.smallDryer.push(e.smallDryer);
+    });
+  }
+  populateSlots(booked);
+};
+
+bookingForm.addEventListener("submit", async e=>{
   e.preventDefault();
-  await push(ref(db,`bookings/${bookingDate.value}`),{
-    name:userName.value.trim(),
+  const data={
+    uid: auth.currentUser.uid,
+    name:userName.value,
     date:bookingDate.value,
     bigWasher:bigWasher.value,
     smallWasher:smallWasher.value,
     bigDryer:bigDryer.value,
     smallDryer:smallDryer.value
-  });
+  };
+
+  const snap = await get(child(ref(db), `bookings/${data.date}`));
+  if(snap.exists()){
+    for(const e of Object.values(snap.val())){
+      if(
+        (data.bigWasher && e.bigWasher===data.bigWasher) ||
+        (data.smallWasher && e.smallWasher===data.smallWasher) ||
+        (data.bigDryer && e.bigDryer===data.bigDryer) ||
+        (data.smallDryer && e.smallDryer===data.smallDryer)
+      ){
+        alert("⚠️ Slot already booked");
+        return;
+      }
+    }
+  }
+
+  await push(ref(db, `bookings/${data.date}`), data);
   alert("✅ Booking Successful");
   bookingForm.reset();
+  loadBookings();
+});
+
+showBookingsBtn.onclick=()=>{
+  bookingSection.style.display="block";
+  loadBookings();
 };
 
-/* Admin login */
-passwordModal.classList.add("hidden");
-adminLoginBtn.onclick = ()=>passwordModal.classList.remove("hidden");
-confirmAdminLogin.onclick = ()=>{
-  if(adminPassword.value==="admin123"){
-    passwordModal.classList.add("hidden");
-    userPage.classList.add("hidden");
-    adminPage.classList.remove("hidden");
-    loadAdmin();
-  } else alert("❌ Wrong password");
-};
-window.logoutAdmin=()=>{
-  adminPage.classList.add("hidden");
-  userPage.classList.remove("hidden");
-};
-
-/* Time helpers */
-function nowMinutes(){
-  const d=new Date();
-  return d.getHours()*60 + d.getMinutes();
-}
-
-/* Load admin (DAY-WISE, MACHINE-WISE) */
-async function loadAdmin(){
-  adminTable.innerHTML="";
-  const date = adminDate.value;
-  const snap = await get(child(ref(db),"bookings/"+date));
-  if(!snap.exists()) return;
-
-  for(const [key,b] of Object.entries(snap.val())){
-    fields.forEach(f=>{
-      if(!b[f]) return;
-
-      const start = parseInt(b[f]);
-      const now = nowMinutes();
-
-      let status, cls;
-      if(date < today){ status="COMPLETED"; cls="completed"; }
-      else if(date > today){ status="UPCOMING"; cls="upcoming"; }
-      else if(start <= now && now < start+60){ status="LIVE"; cls="live"; }
-      else if(start+60 <= now){ status="COMPLETED"; cls="completed"; }
-      else { status="UPCOMING"; cls="upcoming"; }
-
-      const tr=document.createElement("tr");
-      tr.innerHTML=`
-        <td>${b.name}</td>
-        <td>${f}</td>
-        <td>${b[f]}</td>
-        <td class="${cls}">${status}</td>
-        <td>
-          <button class="delete"
-            onclick="deleteMachine('${key}','${f}')">Delete</button>
-        </td>`;
-      adminTable.appendChild(tr);
-    });
-  }
-}
-
-window.deleteMachine = async (key,f)=>{
-  if(!confirm(`Delete ${f} booking?`)) return;
-  const base = ref(db,`bookings/${adminDate.value}/${key}`);
-  await update(base,{[f]:""});
-  const snap = await get(base);
-  if(snap.exists() && fields.every(x=>!snap.val()[x])){
-    await remove(base);
-  }
-  loadAdmin();
-};
-
-adminDate.addEventListener("change",loadAdmin);
-
-/* METRICS (unchanged, stable) */
-const month = today.slice(0,7);
-async function loadMetrics(){
-  const snap = await get(ref(db,"bookings"));
-  if(!snap.exists()) return;
-
-  const monthly={}, allTime={}, night={}, early={};
-  Object.values(snap.val()).forEach(day=>{
-    Object.values(day).forEach(b=>{
-      allTime[b.name]=(allTime[b.name]||0)+1;
-      if(b.date.startsWith(month))
-        monthly[b.name]=(monthly[b.name]||0)+1;
-
-      fields.forEach(f=>{
-        if(!b[f]||!b.date.startsWith(month)) return;
-        const h=parseInt(b[f]);
-        if(h<5) night[b.name]=(night[b.name]||0)+1;
-        if(h>=5 && h<7) early[b.name]=(early[b.name]||0)+1;
-      });
-    });
-  });
-
-  const sort=o=>Object.entries(o).sort((a,b)=>b[1]-a[1]);
-  const m=sort(monthly), a=sort(allTime);
-
-  topMonth.textContent = m[0] ? `🏅 Top Booker (This Month): ${m[0][0]} (${m[0][1]})` : "—";
-  topAllTime.textContent = a[0] ? `🌟 All-Time Legend: ${a[0][0]} (${a[0][1]})` : "—";
-  top10Month.innerHTML = m.slice(0,10).map(x=>`<li>${x[0]} – ${x[1]}</li>`).join("");
-  top10All.innerHTML = a.slice(0,10).map(x=>`<li>${x[0]} – ${x[1]}</li>`).join("");
-
-  const insights=[];
-  if(sort(night)[0]) insights.push(`🦉 Night Owl: ${sort(night)[0][0]} (${sort(night)[0][1]})`);
-  if(sort(early)[0]) insights.push(`🐓 Early Bird: ${sort(early)[0][0]} (${sort(early)[0][1]})`);
-  rotateInsights(insights);
-}
-
-function rotateInsights(arr){
-  if(!arr.length) return;
-  let i=0;
-  setInterval(()=>{
-    toast.textContent=arr[i%arr.length];
-    toast.classList.add("show");
-    setTimeout(()=>toast.classList.remove("show"),3500);
-    i++;
-  },5000);
-}
-
-loadMetrics();
+bookingDate.onchange = loadBookings;
 </script>
-
 </body>
 </html>
